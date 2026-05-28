@@ -35,7 +35,18 @@ elseif ($method === "POST") {
 elseif ($method === "PUT") {
 
     $data = json_decode(file_get_contents("php://input"), true);
-    $controller->update($data);
+
+    if (!$data) {
+        http_response_code(400);
+        echo json_encode(["message" => "Invalid JSON"]);
+        exit;
+    }
+
+    if (isset($data['latitude']) && isset($data['longitude'])) {
+        $controller->updateLocation($data);
+    } else {
+        $controller->update($data);
+    }
 }
 
 // DELETE DRIVER
@@ -44,15 +55,5 @@ elseif ($method === "DELETE") {
     if (isset($_GET['id'])) {
         $controller->destroy($_GET['id']);
     }
-}
-
-// UPDATE LOCATION
-if(isset($data['latitude'])) {
-
-    $controller->updateLocation($data);
-
-} else {
-
-    $controller->update($data);
 }
 ?>

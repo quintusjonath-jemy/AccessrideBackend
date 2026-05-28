@@ -33,36 +33,64 @@ class Driver {
 
     // ADD DRIVER
     public function addDriver($data) {
-        $stmt = $this->conn->prepare("
-            INSERT INTO drivers (name, email, status, location)
-            VALUES (?, ?, ?, ?)
-        ");
+
+        $sql = "
+            INSERT INTO drivers
+            (
+                name,
+                email,
+                phone,
+                vehicle_number,
+                vehicle_type,
+                status,
+                current_location
+            )
+
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ";
+
+        $stmt = $this->conn->prepare($sql);
 
         $stmt->bind_param(
-            "ssss",
+            "sssssss",
             $data['name'],
             $data['email'],
+            $data['phone'],
+            $data['vehicle_number'],
+            $data['vehicle_type'],
             $data['status'],
-            $data['location']
+            $data['current_location']
         );
 
         return $stmt->execute();
     }
-
     // UPDATE DRIVER
     public function updateDriver($data) {
-        $stmt = $this->conn->prepare("
+
+        $sql = "
             UPDATE drivers
-            SET name=?, email=?, status=?, location=?
+            SET
+                name=?,
+                email=?,
+                phone=?,
+                vehicle_number=?,
+                vehicle_type=?,
+                status=?,
+                current_location=?
             WHERE id=?
-        ");
+        ";
+
+        $stmt = $this->conn->prepare($sql);
 
         $stmt->bind_param(
-            "ssssi",
+            "sssssssi",
             $data['name'],
             $data['email'],
+            $data['phone'],
+            $data['vehicle_number'],
+            $data['vehicle_type'],
             $data['status'],
-            $data['location'],
+            $data['current_location'],
             $data['id']
         );
 
