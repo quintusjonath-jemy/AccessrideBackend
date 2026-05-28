@@ -76,5 +76,26 @@ class Driver {
 
         return $stmt->execute();
     }
+
+    // UPDATE DRIVER LOCATION
+    public function updateLocation($data) {
+
+        $sql = "
+            UPDATE drivers
+            SET latitude=?, longitude=?
+            WHERE id=?
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+
+        $stmt->bind_param(
+            "ddi",
+            $data['latitude'],
+            $data['longitude'],
+            $data['id']
+        );
+
+        return $stmt->execute();
+    }
 }
 ?>

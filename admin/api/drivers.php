@@ -45,4 +45,14 @@ elseif ($method === "DELETE") {
         $controller->destroy($_GET['id']);
     }
 }
+
+// UPDATE LOCATION
+if(isset($data['latitude'])) {
+
+    $controller->updateLocation($data);
+
+} else {
+
+    $controller->update($data);
+}
 ?>
