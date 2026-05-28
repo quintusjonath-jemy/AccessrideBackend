@@ -11,11 +11,35 @@ class Ride {
 
     // GET RIDES
     public function getRides() {
-        $result = $this->conn->query("SELECT * FROM rides");
+
+        $sql = "
+            SELECT
+
+                rides.*,
+
+                users.name AS user_name,
+
+                drivers.name AS driver_name,
+
+                drivers.latitude,
+
+                drivers.longitude
+
+            FROM rides
+
+            LEFT JOIN users
+            ON rides.user_id = users.id
+
+            LEFT JOIN drivers
+            ON rides.driver_id = drivers.id
+        ";
+
+        $result = $this->conn->query($sql);
 
         $rides = [];
 
         while ($row = $result->fetch_assoc()) {
+
             $rides[] = $row;
         }
 

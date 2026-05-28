@@ -37,5 +37,16 @@ class DriverController {
             "success" => $this->driver->deleteDriver($id)
         ]);
     }
+
+    // UPDATE LOCATION
+    public function updateLocation($data) {
+
+        $success =
+            $this->driver->updateLocation($data);
+
+        echo json_encode([
+            "success" => $success
+        ]);
+    }
 }
 ?>
