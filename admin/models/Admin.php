@@ -10,30 +10,43 @@ class Admin {
     }
 
     // GET ADMIN
-    public function getAdmin() {
 
-        $sql = "SELECT id, name, email FROM admins LIMIT 1";
+    public function getAdmin($id) {
 
-        $result = $this->conn->query($sql);
+        $stmt = $this->conn->prepare(
+            "SELECT * FROM admins WHERE id=?"
+        );
 
-        return $result->fetch_assoc();
+        $stmt->bind_param("i", $id);
+
+        $stmt->execute();
+
+        return $stmt
+            ->get_result()
+            ->fetch_assoc();
     }
 
     // UPDATE PROFILE
+
     public function updateProfile($data) {
 
         $sql = "
             UPDATE admins
-            SET name=?, email=?
-            WHERE id=1
+            SET
+                name=?,
+                email=?,
+                phone=?
+            WHERE id=?
         ";
 
         $stmt = $this->conn->prepare($sql);
 
         $stmt->bind_param(
-            "ss",
+            "sssi",
             $data['name'],
-            $data['email']
+            $data['email'],
+            $data['phone'],
+            $data['id']
         );
 
         return $stmt->execute();

@@ -17,20 +17,18 @@ class AdminController {
     }
 
     // GET ADMIN
-    public function index() {
+   public function index($id) {
 
         echo json_encode(
-            $this->admin->getAdmin()
+            $this->admin->getAdmin($id)
         );
     }
 
-    // UPDATE PROFILE
-    public function update($data) {
-
-        $success = $this->admin->updateProfile($data);
+    public function updateProfile($data) {
 
         echo json_encode([
-            "success" => $success
+            "success" =>
+            $this->admin->updateProfile($data)
         ]);
     }
 
