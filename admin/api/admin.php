@@ -13,7 +13,16 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === "GET") {
 
-    $controller->index(1);
+    $action = $_GET['action'] ?? '';
+
+    if ($action === "notifications") {
+
+        $controller->getNotifications(1);
+
+    } else {
+
+        $controller->index(1);
+    }
 }
 
 elseif ($method === "POST") {
@@ -40,5 +49,14 @@ elseif ($method === "POST") {
         $data['profile_image'] = $fileName;
     }
 
-    $controller->updateProfile($data);
+    $action = $_GET['action'] ?? '';
+
+    if ($action === "notifications") {
+
+        $controller->updateNotifications($data);
+
+    } else {
+
+        $controller->updateProfile($data);
+    }
 }
