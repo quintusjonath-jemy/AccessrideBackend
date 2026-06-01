@@ -35,17 +35,19 @@ class Admin {
             SET
                 name=?,
                 email=?,
-                phone=?
+                phone=?,
+                profile_image=?
             WHERE id=?
         ";
 
         $stmt = $this->conn->prepare($sql);
 
         $stmt->bind_param(
-            "sssi",
+            "ssssi",
             $data['name'],
             $data['email'],
             $data['phone'],
+            $data['profile_image'],
             $data['id']
         );
 
