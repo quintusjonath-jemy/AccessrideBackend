@@ -41,6 +41,22 @@ class AdminController {
             "success" => $success
         ]);
     }
+
+    public function getNotifications($id) {
+
+        echo json_encode(
+            $this->admin->getNotifications($id)
+        );
+    }
+
+
+    public function updateNotifications($data) {
+
+        echo json_encode([
+            "success" =>
+            $this->admin->updateNotifications($data)
+        ]);
+    }
 }
 
 ?>

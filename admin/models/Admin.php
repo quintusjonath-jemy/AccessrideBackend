@@ -74,6 +74,52 @@ class Admin {
 
         return $stmt->execute();
     }
+
+    // GET NOTIFICATION SETTINGS
+    public function getNotifications($id) {
+
+        $stmt = $this->conn->prepare("
+            SELECT
+                sos_alert,
+                ride_alert,
+                driver_alert,
+                email_notifications
+            FROM admins
+            WHERE id=?
+        ");
+
+        $stmt->bind_param("i", $id);
+
+        $stmt->execute();
+
+        return $stmt->get_result()->fetch_assoc();
+    }
+
+
+    // UPDATE NOTIFICATION SETTINGS
+    public function updateNotifications($data) {
+
+        $stmt = $this->conn->prepare("
+            UPDATE admins
+            SET
+                sos_alert=?,
+                ride_alert=?,
+                driver_alert=?,
+                email_notifications=?
+            WHERE id=?
+        ");
+
+        $stmt->bind_param(
+            "iiiii",
+            $data['sos_alert'],
+            $data['ride_alert'],
+            $data['driver_alert'],
+            $data['email_notifications'],
+            $data['id']
+        );
+
+        return $stmt->execute();
+    }
 }
 
 ?>
