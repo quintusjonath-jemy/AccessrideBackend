@@ -33,12 +33,11 @@ class AdminController {
     }
 
     // UPDATE PASSWORD
-    public function password($data) {
-
-        $success = $this->admin->updatePassword($data);
+    public function updatePassword($data) {
 
         echo json_encode([
-            "success" => $success
+            "success" =>
+            $this->admin->updatePassword($data)
         ]);
     }
 
