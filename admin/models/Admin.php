@@ -57,24 +57,51 @@ class Admin {
     // CHANGE PASSWORD
     public function updatePassword($data) {
 
-        $password = md5($data['new_password']);
-
-        $sql = "
-            UPDATE admins
-            SET password=?
-            WHERE id=1
-        ";
-
-        $stmt = $this->conn->prepare($sql);
+        $stmt = $this->conn->prepare(
+            "SELECT password
+            FROM admins
+            WHERE id=?"
+        );
 
         $stmt->bind_param(
-            "s",
-            $password
+            "i",
+            $data['id']
+        );
+
+        $stmt->execute();
+
+        $admin = $stmt
+            ->get_result()
+            ->fetch_assoc();
+
+        if (
+            !password_verify(
+                $data['current_password'],
+                $admin['password']
+            )
+        ) {
+            return false;
+        }
+
+        $newPassword = password_hash(
+            $data['new_password'],
+            PASSWORD_DEFAULT
+        );
+
+        $stmt = $this->conn->prepare(
+            "UPDATE admins
+            SET password=?
+            WHERE id=?"
+        );
+
+        $stmt->bind_param(
+            "si",
+            $newPassword,
+            $data['id']
         );
 
         return $stmt->execute();
     }
-
     // GET NOTIFICATION SETTINGS
     public function getNotifications($id) {
 

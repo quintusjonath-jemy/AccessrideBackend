@@ -55,6 +55,10 @@ elseif ($method === "POST") {
 
         $controller->updateNotifications($data);
 
+    } elseif ($action === "security") {
+
+        $controller->updatePassword($data);
+
     } else {
 
         $controller->updateProfile($data);
