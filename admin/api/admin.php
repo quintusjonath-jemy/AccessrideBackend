@@ -19,6 +19,10 @@ if ($method === "GET") {
 
         $controller->getNotifications(1);
 
+    } elseif ($action === "system") {
+
+        $controller->getSystemSettings(1);
+
     } else {
 
         $controller->index(1);
@@ -59,6 +63,10 @@ elseif ($method === "POST") {
 
         $controller->updatePassword($data);
 
+    } elseif ($action === "system") {
+        
+        $controller->updateSystemSettings($data);
+        
     } else {
 
         $controller->updateProfile($data);

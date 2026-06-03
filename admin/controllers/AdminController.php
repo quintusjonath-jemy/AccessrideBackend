@@ -56,6 +56,19 @@ class AdminController {
             $this->admin->updateNotifications($data)
         ]);
     }
+
+    public function getSystemSettings($id) {
+        echo json_encode(
+            $this->admin->getSystemSettings($id)
+        );
+    }
+
+    public function updateSystemSettings($data) {
+        echo json_encode([
+            "success" =>
+            $this->admin->updateSystemSettings($data)
+        ]);
+    }
 }
 
 ?>
