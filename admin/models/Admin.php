@@ -147,6 +147,51 @@ class Admin {
 
         return $stmt->execute();
     }
+
+    public function getSystemSettings($id) {
+
+        $stmt = $this->conn->prepare("
+            SELECT
+                theme,
+                refresh_rate,
+                sos_enabled,
+                tracking_enabled
+            FROM admins
+            WHERE id=?
+        ");
+
+        $stmt->bind_param("i", $id);
+
+        $stmt->execute();
+
+        return $stmt
+            ->get_result()
+            ->fetch_assoc();
+    }
+
+    public function updateSystemSettings($data) {
+
+        $stmt = $this->conn->prepare("
+            UPDATE admins
+            SET
+                theme=?,
+                refresh_rate=?,
+                sos_enabled=?,
+                tracking_enabled=?
+            WHERE id=?
+        ");
+
+        $stmt->bind_param(
+            "siiii",
+            $data['theme'],
+            $data['refresh_rate'],
+            $data['sos_enabled'],
+            $data['tracking_enabled'],
+            $data['id']
+        );
+
+        return $stmt->execute();
+    }
 }
 
 ?>
