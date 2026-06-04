@@ -55,12 +55,11 @@ class UserController {
     }
 
     // HIDE USER
-    public function hide($id) {
-
-        $success = $this->user->hideUser($id);
+    public function toggleStatus($id) {
 
         echo json_encode([
-            "success" => $success
+            "success" =>
+            $this->user->toggleUserStatus($id)
         ]);
     }
 }

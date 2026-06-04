@@ -21,7 +21,7 @@ if($method === "GET") {
     // Hide user
     if(isset($_GET['hide'])) {
 
-        $controller->hide($_GET['hide']);
+        $controller->toggleStatus($_GET['hide']);
 
     } else {
 
