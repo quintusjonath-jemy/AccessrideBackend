@@ -79,15 +79,32 @@ class User {
     }
 
     // HIDE USER
-    public function hideUser($id) {
+    public function toggleUserStatus($id) {
 
-        $sql = "UPDATE users
-                SET status='Hidden'
-                WHERE id=?";
-
-        $stmt = $this->conn->prepare($sql);
+        $stmt = $this->conn->prepare(
+            "SELECT status FROM users WHERE id=?"
+        );
 
         $stmt->bind_param("i", $id);
+
+        $stmt->execute();
+
+        $user = $stmt->get_result()->fetch_assoc();
+
+        $newStatus =
+            strtolower($user['status']) === 'blocked'
+            ? 'active'
+            : 'blocked';
+
+        $stmt = $this->conn->prepare(
+            "UPDATE users SET status=? WHERE id=?"
+        );
+
+        $stmt->bind_param(
+            "si",
+            $newStatus,
+            $id
+        );
 
         return $stmt->execute();
     }
