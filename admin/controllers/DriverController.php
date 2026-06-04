@@ -48,5 +48,13 @@ class DriverController {
             "success" => $success
         ]);
     }
+
+    public function toggleStatus($id) {
+
+        echo json_encode([
+            "success" =>
+            $this->driver->toggleDriverStatus($id)
+        ]);
+    }
 }
 ?>

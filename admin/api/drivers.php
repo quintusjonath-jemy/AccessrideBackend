@@ -17,9 +17,17 @@ $method = $_SERVER['REQUEST_METHOD'];
 // GET DRIVERS
 if ($method === "GET") {
 
-    if (isset($_GET['id'])) {
+    if (isset($_GET['action']) &&
+        $_GET['action'] === "block") {
+
+        $controller->toggleStatus($_GET['id']);
+
+    } elseif (isset($_GET['id'])) {
+
         $controller->show($_GET['id']);
+
     } else {
+
         $controller->index();
     }
 }
