@@ -48,17 +48,29 @@ class Ride {
 
     // ADD RIDE
     public function addRide($data) {
+
         $stmt = $this->conn->prepare("
-            INSERT INTO rides (driver_id, user_id, status, location)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO rides (
+                driver_id,
+                user_id,
+                pickup_location,
+                dropoff_location,
+                status,
+                fare,
+                distance_km
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
 
         $stmt->bind_param(
-            "iiss",
+            "iisssdd",
             $data['driver_id'],
             $data['user_id'],
+            $data['pickup_location'],
+            $data['dropoff_location'],
             $data['status'],
-            $data['location']
+            $data['fare'],
+            $data['distance_km']
         );
 
         return $stmt->execute();
@@ -66,18 +78,29 @@ class Ride {
 
     // UPDATE RIDE
     public function updateRide($data) {
+
         $stmt = $this->conn->prepare("
             UPDATE rides
-            SET driver_id=?, user_id=?, status=?, location=?
+            SET
+                driver_id=?,
+                user_id=?,
+                pickup_location=?,
+                dropoff_location=?,
+                status=?,
+                fare=?,
+                distance_km=?
             WHERE id=?
         ");
 
         $stmt->bind_param(
-            "iissi",
+            "iisssddi",
             $data['driver_id'],
             $data['user_id'],
+            $data['pickup_location'],
+            $data['dropoff_location'],
             $data['status'],
-            $data['location'],
+            $data['fare'],
+            $data['distance_km'],
             $data['id']
         );
 
