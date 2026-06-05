@@ -128,34 +128,26 @@ class Driver {
 
     public function toggleDriverStatus($id) {
 
-        $stmt = $this->conn->prepare(
-            "SELECT status FROM drivers WHERE id=?"
-        );
-
+        $stmt = $this->conn->prepare("SELECT status FROM drivers WHERE id=?");
         $stmt->bind_param("i", $id);
-
         $stmt->execute();
 
         $driver = $stmt->get_result()->fetch_assoc();
 
-        if (!$driver) {
-            return false;
+        if (!$driver) return false;
+
+        $current = strtolower($driver['status']);
+
+        // only toggle block/unblock safely
+        if ($current === 'blocked') {
+            // restore to offline (safe default)
+            $newStatus = 'offline';
+        } else {
+            $newStatus = 'blocked';
         }
 
-        $newStatus =
-            strtolower($driver['status']) === 'blocked'
-            ? 'online'
-            : 'blocked';
-
-        $stmt = $this->conn->prepare(
-            "UPDATE drivers SET status=? WHERE id=?"
-        );
-
-        $stmt->bind_param(
-            "si",
-            $newStatus,
-            $id
-        );
+        $stmt = $this->conn->prepare("UPDATE drivers SET status=? WHERE id=?");
+        $stmt->bind_param("si", $newStatus, $id);
 
         return $stmt->execute();
     }

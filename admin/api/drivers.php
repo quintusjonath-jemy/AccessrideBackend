@@ -17,10 +17,10 @@ $method = $_SERVER['REQUEST_METHOD'];
 // GET DRIVERS
 if ($method === "GET") {
 
-    if (isset($_GET['action']) &&
-        $_GET['action'] === "block") {
+    if (isset($_GET['block'])) {
 
-        $controller->toggleStatus($_GET['id']);
+        $controller->toggleStatus($_GET['block']);
+        exit;
 
     } elseif (isset($_GET['id'])) {
 
@@ -60,8 +60,9 @@ elseif ($method === "PUT") {
 // DELETE DRIVER
 elseif ($method === "DELETE") {
 
-    if (isset($_GET['id'])) {
+   if (isset($_GET['id'])) {
         $controller->destroy($_GET['id']);
+        exit;
     }
 }
 ?>
