@@ -28,6 +28,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // If no driver_id provided, try to find the driver from active ride
+    if (empty($driver_id)) {
+        $ride_sql = "SELECT driver_id FROM rides WHERE user_id = ? AND (status = 'accepted' OR status = 'in_progress') ORDER BY created_at DESC LIMIT 1";
+        $ride_stmt = $db->prepare($ride_sql);
+        $ride_stmt->bind_param("i", $user_id);
+        $ride_stmt->execute();
+        $ride_result = $ride_stmt->get_result();
+        
+        if ($ride_result->num_rows > 0) {
+            $ride_row = $ride_result->fetch_assoc();
+            $driver_id = $ride_row['driver_id'];
+        }
+        $ride_stmt->close();
+    }
+
     // Insert SOS alert into database
     $sql = "INSERT INTO alerts 
             (user_id, driver_id, alert_type, message, latitude, longitude, created_at) 
@@ -59,10 +74,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     );
 
     if ($stmt->execute()) {
+        // Fetch driver information if driver_id exists
+        $driver_info = null;
+        if (!empty($driver_id)) {
+            $driver_sql = "SELECT id, name, phone, latitude, longitude FROM drivers WHERE id = ?";
+            $driver_stmt = $db->prepare($driver_sql);
+            $driver_stmt->bind_param("i", $driver_id);
+            $driver_stmt->execute();
+            $driver_result = $driver_stmt->get_result();
+            
+            if ($driver_result->num_rows > 0) {
+                $driver_info = $driver_result->fetch_assoc();
+            }
+            $driver_stmt->close();
+        }
+
         echo json_encode([
             "status" => "success",
             "message" => "SOS sent successfully",
-            "alert_id" => $stmt->insert_id
+            "alert_id" => $stmt->insert_id,
+            "driver_called" => !empty($driver_id),
+            "driver_info" => $driver_info
         ]);
     } else {
         http_response_code(500);
