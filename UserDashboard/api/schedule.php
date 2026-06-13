@@ -5,7 +5,7 @@ ini_set('display_errors', 1);
 
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
 // Handle preflight CORS requests
@@ -14,14 +14,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require_once "../config/Database.php";
-require_once "../controllers/ScheduleController.php";
+require_once __DIR__ . "/../controllers/ScheduleController.php";
 
 try {
-    $database = new Database();
-    $db = $database->connect();
-    $controller = new ScheduleController($db);
-
+    $controller = new ScheduleController();
     $method = $_SERVER['REQUEST_METHOD'];
 
     switch ($method) {
@@ -41,7 +37,7 @@ try {
             break;
 
         case 'POST':
-            // Read JSON input
+            // Schedule a new ride
             $data = json_decode(file_get_contents("php://input"), true);
             
             if (!$data) {
@@ -53,15 +49,24 @@ try {
                 exit;
             }
 
-            // Check if POST action is a cancellation request
-            if (isset($data['action']) && $data['action'] === 'cancel') {
-                $rideId = isset($data['ride_id']) ? (int) $data['ride_id'] : 0;
-                $userId = isset($data['user_id']) ? (int) $data['user_id'] : 0;
-                $response = $controller->cancelSchedule($rideId, $userId);
-            } else {
-                // Otherwise, it is a new booking
-                $response = $controller->addSchedule($data);
+            $response = $controller->addSchedule($data);
+            echo json_encode($response);
+            break;
+
+        case 'PUT':
+            // Update an existing scheduled ride
+            $data = json_decode(file_get_contents("php://input"), true);
+            
+            if (!$data) {
+                http_response_code(400);
+                echo json_encode([
+                    "success" => false,
+                    "message" => "Invalid JSON payload"
+                ]);
+                exit;
             }
+
+            $response = $controller->updateSchedule($data);
             echo json_encode($response);
             break;
 
@@ -102,7 +107,7 @@ try {
             break;
     }
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     http_response_code(500);
     echo json_encode([
         "success" => false,
