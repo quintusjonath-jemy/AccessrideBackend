@@ -4,8 +4,9 @@ require_once __DIR__ . '/../models/User.php';
 
 class UserController {
     public function getCurrentUser(): void {
-        if (User::isAuthenticated()) {
-            echo json_encode(['user' => User::current()]);
+        $currentUser = User::current();
+        if ($currentUser) {
+            echo json_encode(['user' => $currentUser]);
             return;
         }
 

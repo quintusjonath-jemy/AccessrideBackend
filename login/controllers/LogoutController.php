@@ -6,7 +6,8 @@ class LogoutController {
         session_unset();
         session_destroy();
 
-        header('Location: ' . FRONTEND_BASE . '/admin-login');
+        $redirectBase = defined('FRONTEND_BASE') ? rtrim(FRONTEND_BASE, '/') : '';
+        header('Location: ' . $redirectBase . '/admin-login');
         exit;
     }
 }

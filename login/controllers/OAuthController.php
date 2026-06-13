@@ -25,7 +25,17 @@ class OAuthController {
         $accessToken = $tokenData['access_token'];
         $userInfo = $this->fetchUserInfo($accessToken);
 
-        $_SESSION['user'] = User::fromGoogleProfile($userInfo);
+        if (method_exists(User::class, 'fromGoogleProfile')) {
+            $_SESSION['user'] = User::fromGoogleProfile($userInfo);
+        } else {
+            $_SESSION['user'] = (object)[
+                'id' => $userInfo['sub'] ?? null,
+                'email' => $userInfo['email'] ?? null,
+                'name' => $userInfo['name'] ?? null,
+                'picture' => $userInfo['picture'] ?? null,
+                'verified_email' => $userInfo['email_verified'] ?? null,
+            ];
+        }
 
         header('Location: ' . FRONTEND_BASE . '/admin-login?auth=success');
         exit;
