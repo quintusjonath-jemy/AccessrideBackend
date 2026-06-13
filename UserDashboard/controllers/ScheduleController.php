@@ -2,15 +2,18 @@
 
 require_once __DIR__ . "/../config/Database.php";
 require_once __DIR__ . "/../models/Schedule.php";
+require_once __DIR__ . "/../models/Payment.php";
 
 class ScheduleController
 {
     private $scheduleModel;
+    private $paymentModel;
 
     public function __construct()
     {
         $db = (new Database())->connect();
         $this->scheduleModel = new Schedule($db);
+        $this->paymentModel = new Payment($db);
     }
 
     // GET ALL ACTIVE SCHEDULES
@@ -58,7 +61,11 @@ class ScheduleController
         $pickup = trim($data['pickup_location']);
         $dropoff = trim($data['dropoff_location']);
         $dateTime = date("Y-m-d H:i:s", $scheduledTime);
-        $fare = isset($data['fare']) ? (float) $data['fare'] : 250.0;
+        $distance = isset($data['distance_km']) ? (float) $data['distance_km'] : 0.0;
+        if ($distance <= 0.0) {
+            $distance = (float) ((strlen($pickup) + strlen($dropoff)) % 12 + 3.4);
+        }
+        $fare = $distance * 80.00;
         
         // Read vehicle_type (with fallback to wheelchair_type if sent by legacy code)
         $vehicleType = "car";
@@ -77,14 +84,20 @@ class ScheduleController
             return ["success" => false, "message" => "Invalid vehicle type chosen"];
         }
 
+        $paymentMethod = isset($data['payment_method']) ? trim($data['payment_method']) : "cash";
+
         // 2. Call Model
-        $result = $this->scheduleModel->create($userId, $pickup, $dropoff, $dateTime, $fare, $vehicleType);
+        $result = $this->scheduleModel->create($userId, $pickup, $dropoff, $dateTime, $fare, $vehicleType, $distance);
 
         if ($result['success']) {
+            // Create corresponding payment record
+            $rideId = $result['id'];
+            $this->paymentModel->create($rideId, $fare, $paymentMethod, "pending");
+
             return [
                 "success" => true,
                 "message" => "Ride scheduled successfully",
-                "ride_id" => $result['id']
+                "ride_id" => $rideId
             ];
         }
 
@@ -124,7 +137,11 @@ class ScheduleController
         $pickup = trim($data['pickup_location']);
         $dropoff = trim($data['dropoff_location']);
         $dateTime = date("Y-m-d H:i:s", $scheduledTime);
-        $fare = isset($data['fare']) ? (float) $data['fare'] : 250.0;
+        $distance = isset($data['distance_km']) ? (float) $data['distance_km'] : 0.0;
+        if ($distance <= 0.0) {
+            $distance = (float) ((strlen($pickup) + strlen($dropoff)) % 12 + 3.4);
+        }
+        $fare = $distance * 80.00;
         
         $vehicleType = "car";
         if (isset($data['vehicle_type'])) {
@@ -136,10 +153,20 @@ class ScheduleController
             return ["success" => false, "message" => "Invalid vehicle type chosen"];
         }
 
+        $paymentMethod = isset($data['payment_method']) ? trim($data['payment_method']) : "cash";
+
         // 2. Call Model
-        $success = $this->scheduleModel->update($rideId, $userId, $pickup, $dropoff, $dateTime, $fare, $vehicleType);
+        $success = $this->scheduleModel->update($rideId, $userId, $pickup, $dropoff, $dateTime, $fare, $vehicleType, $distance);
 
         if ($success) {
+            // Update corresponding payment record
+            $existingPayment = $this->paymentModel->getByRideId($rideId);
+            if ($existingPayment) {
+                $this->paymentModel->updateByRideId($rideId, $fare, $paymentMethod, $existingPayment['status']);
+            } else {
+                $this->paymentModel->create($rideId, $fare, $paymentMethod, "pending");
+            }
+
             return [
                 "success" => true,
                 "message" => "Scheduled ride updated successfully"
