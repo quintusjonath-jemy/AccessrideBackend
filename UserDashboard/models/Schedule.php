@@ -128,7 +128,8 @@ class Schedule
         if ($stmt->execute()) {
             return [
                 "success" => true,
-                "id" => $stmt->insert_id
+                "id" => $stmt->insert_id,
+                "driver_id" => $driverId
             ];
         }
 

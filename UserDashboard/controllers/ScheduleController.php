@@ -92,7 +92,8 @@ class ScheduleController
         if ($result['success']) {
             // Create corresponding payment record
             $rideId = $result['id'];
-            $this->paymentModel->create($rideId, $fare, $paymentMethod, "pending");
+            $driverId = isset($result['driver_id']) ? $result['driver_id'] : null;
+            $this->paymentModel->create($rideId, $fare, $paymentMethod, "pending", $userId, $driverId);
 
             return [
                 "success" => true,
@@ -164,7 +165,7 @@ class ScheduleController
             if ($existingPayment) {
                 $this->paymentModel->updateByRideId($rideId, $fare, $paymentMethod, $existingPayment['status']);
             } else {
-                $this->paymentModel->create($rideId, $fare, $paymentMethod, "pending");
+                $this->paymentModel->create($rideId, $fare, $paymentMethod, "pending", $userId, null);
             }
 
             return [

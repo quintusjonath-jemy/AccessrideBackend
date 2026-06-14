@@ -84,6 +84,7 @@ try {
 
     if ($result['success']) {
         $rideId = $result['id'];
+        $driverId = isset($result['driver_id']) ? $result['driver_id'] : null;
         
         // Save payment details (status complete or pending depending on method)
         $paymentStatus = "pending";
@@ -93,7 +94,7 @@ try {
             $paymentStatus = "completed"; // Simulated advance digital payment success
         }
         
-        $paymentModel->create($rideId, $fare, $paymentMethod, $paymentStatus);
+        $paymentModel->create($rideId, $fare, $paymentMethod, $paymentStatus, $userId, $driverId);
 
         echo json_encode([
             "success" => true,
