@@ -17,9 +17,21 @@ class Schedule
         return $result && $result->num_rows > 0;
     }
 
-    // Helper to get first driver in the database
-    private function getDefaultDriverId()
+    // Helper to get first driver in the database matching vehicle type
+    private function getDefaultDriverId($vehicleType = null)
     {
+        if ($vehicleType) {
+            $stmt = $this->conn->prepare("SELECT id FROM drivers WHERE LOWER(vehicle_type) = LOWER(?) LIMIT 1");
+            if ($stmt) {
+                $stmt->bind_param("s", $vehicleType);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                if ($result && $row = $result->fetch_assoc()) {
+                    return (int) $row['id'];
+                }
+            }
+        }
+
         $result = $this->conn->query("SELECT id FROM drivers LIMIT 1");
         if ($result && $row = $result->fetch_assoc()) {
             return (int) $row['id'];
@@ -30,7 +42,7 @@ class Schedule
     // CREATE A NEW SCHEDULED RIDE
     public function create($userId, $pickup, $dropoff, $dateTime, $fare, $vehicleType, $distance = 0.0)
     {
-        $driverId = $this->getDefaultDriverId();
+        $driverId = $this->getDefaultDriverId($vehicleType);
         if ($driverId === null) {
             return [
                 "success" => false,
