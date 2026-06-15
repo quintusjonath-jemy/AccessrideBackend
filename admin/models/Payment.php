@@ -20,8 +20,8 @@ class Payment {
                     p.status,
                     p.transaction_id,
                     p.created_at,
-                    COALESCE(u.name, ru.name) AS user_name,
-                    COALESCE(d.name, rd.name) AS driver_name
+                    TRIM(CONCAT(COALESCE(u.first_name, ru.first_name, ''), ' ', COALESCE(u.last_name, ru.last_name, ''))) AS user_name,
+                    TRIM(CONCAT(COALESCE(d.first_name, rd.first_name, ''), ' ', COALESCE(d.last_name, rd.last_name, ''))) AS driver_name
                 FROM " . $this->table . " p
                 LEFT JOIN users u ON p.user_id = u.id
                 LEFT JOIN drivers d ON p.driver_id = d.id

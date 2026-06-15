@@ -20,23 +20,23 @@ $search = "%$q%";
 
 /* ---------------- USERS ---------------- */
 $userStmt = $conn->prepare("
-    SELECT id, name, email, location
+    SELECT id, TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))) AS name, email, location
     FROM users
-    WHERE name LIKE ? OR email LIKE ? OR location LIKE ?
+    WHERE first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR location LIKE ?
     LIMIT 5
 ");
-$userStmt->bind_param("sss", $search, $search, $search);
+$userStmt->bind_param("ssss", $search, $search, $search, $search);
 $userStmt->execute();
 $users = $userStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 /* ---------------- DRIVERS ---------------- */
 $driverStmt = $conn->prepare("
-    SELECT id, name, email, phone, vehicle_number
+    SELECT id, TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))) AS name, email, phone, vehicle_number
     FROM drivers
-    WHERE name LIKE ? OR email LIKE ? OR phone LIKE ? OR vehicle_number LIKE ?
+    WHERE first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR phone LIKE ? OR vehicle_number LIKE ?
     LIMIT 5
 ");
-$driverStmt->bind_param("ssss", $search, $search, $search, $search);
+$driverStmt->bind_param("sssss", $search, $search, $search, $search, $search);
 $driverStmt->execute();
 $drivers = $driverStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 

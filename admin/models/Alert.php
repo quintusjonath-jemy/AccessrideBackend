@@ -13,7 +13,7 @@ class Alert {
     public function getAlerts() {
 
         $sql = "
-            SELECT alerts.*, users.name as user_name
+            SELECT alerts.*, TRIM(CONCAT(COALESCE(users.first_name, ''), ' ', COALESCE(users.last_name, ''))) as user_name
             FROM alerts
             LEFT JOIN users
             ON alerts.user_id = users.id

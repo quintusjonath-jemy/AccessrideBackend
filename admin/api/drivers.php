@@ -50,7 +50,7 @@ elseif ($method === "PUT") {
         exit;
     }
 
-    if (isset($data['latitude']) && isset($data['longitude'])) {
+    if (isset($data['latitude']) && isset($data['longitude']) && !isset($data['name'])) {
         $controller->updateLocation($data);
     } else {
         $controller->update($data);

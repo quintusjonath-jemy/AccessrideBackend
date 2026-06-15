@@ -17,9 +17,9 @@ class Ride {
 
                 rides.*,
 
-                users.name AS user_name,
+                TRIM(CONCAT(COALESCE(users.first_name, ''), ' ', COALESCE(users.last_name, ''))) AS user_name,
 
-                drivers.name AS driver_name,
+                TRIM(CONCAT(COALESCE(drivers.first_name, ''), ' ', COALESCE(drivers.last_name, ''))) AS driver_name,
 
                 drivers.latitude,
 
