@@ -158,7 +158,7 @@ class Driver {
         $sub_amount = isset($data['subscription_amount']) ? (float)$data['subscription_amount'] : 29.99;
 
         $stmt->bind_param(
-            "ssssssssssds", // bind id as string/integer (bind_param coerces anyway, but let's match count: 13 variables)
+            "sssssssssssdi",
             $first_name,
             $last_name,
             $data['email'],

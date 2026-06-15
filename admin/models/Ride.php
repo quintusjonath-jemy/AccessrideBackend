@@ -25,6 +25,10 @@ class Ride {
 
                 drivers.longitude,
 
+                drivers.current_location AS driver_current_location,
+
+                drivers.vehicle_type AS vehicle_type,
+
                 payments.status AS payment_status
 
             FROM rides
