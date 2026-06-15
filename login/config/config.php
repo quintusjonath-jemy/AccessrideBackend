@@ -27,11 +27,11 @@ if (!defined('GOOGLE_CLIENT_SECRET')) {
 }
 
 if (!defined('BACKEND_BASE')) {
-    define('BACKEND_BASE', getenv('BACKEND_BASE') ?: 'http://localhost:8000');
+    define('BACKEND_BASE', getenv('BACKEND_BASE') ?: 'http://localhost');
 }
 
 if (!defined('FRONTEND_BASE')) {
-    define('FRONTEND_BASE', getenv('FRONTEND_BASE') ?: 'http://localhost:5173');
+    define('FRONTEND_BASE', getenv('FRONTEND_BASE') ?: 'http://localhost:5173/');
 }
 
 if (!defined('REDIRECT_URI')) {
@@ -43,7 +43,7 @@ if (!defined('DB_HOST')) {
 }
 
 if (!defined('DB_NAME')) {
-    define('DB_NAME', getenv('DB_NAME') ?: 'accessride');
+    define('DB_NAME', getenv('DB_NAME') ?: 'access_ride');
 }
 
 if (!defined('DB_USER')) {
