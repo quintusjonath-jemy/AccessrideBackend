@@ -29,6 +29,8 @@ class Ride {
 
                 drivers.vehicle_type AS vehicle_type,
 
+                drivers.status AS driver_status,
+
                 payments.status AS payment_status
 
             FROM rides
