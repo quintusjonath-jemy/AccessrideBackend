@@ -23,7 +23,9 @@ class Ride {
 
                 drivers.latitude,
 
-                drivers.longitude
+                drivers.longitude,
+
+                payments.status AS payment_status
 
             FROM rides
 
@@ -32,6 +34,9 @@ class Ride {
 
             LEFT JOIN drivers
             ON rides.driver_id = drivers.id
+
+            LEFT JOIN payments
+            ON rides.id = payments.ride_id
         ";
 
         $result = $this->conn->query($sql);
