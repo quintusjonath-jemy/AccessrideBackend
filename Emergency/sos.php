@@ -1,6 +1,13 @@
 <?php
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
 
 // Include Database connection
 require_once("../admin/config/Database.php");
@@ -30,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // If no driver_id provided, try to find the driver from active ride
     if (empty($driver_id)) {
-        $ride_sql = "SELECT driver_id FROM rides WHERE user_id = ? AND (status = 'accepted' OR status = 'in_progress') ORDER BY created_at DESC LIMIT 1";
+        $ride_sql = "SELECT driver_id FROM rides WHERE user_id = ? AND (status = 'accepted' OR status = 'active') ORDER BY created_at DESC LIMIT 1";
         $ride_stmt = $db->prepare($ride_sql);
         $ride_stmt->bind_param("i", $user_id);
         $ride_stmt->execute();
@@ -59,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $alert_type = "SOS";
+    $alert_type = "sos";
     $message = "Emergency SOS Alert";
 
     $stmt->bind_param(
