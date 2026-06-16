@@ -34,19 +34,23 @@ $ridesData = $ridesResult->fetch_assoc();
 $totalGrossFare = (float)$ridesData['total_gross_fare'];
 $totalCompletedRides = (int)$ridesData['total_completed_rides'];
 
-$commissionRate = 0.20; // 20% commission
-$platformCommission = $totalGrossFare * $commissionRate;
+$commissionRate = 0.00; // No commission
+$platformCommission = 0.00;
 
-// 2. Calculate Active Subscription Revenue
+// 2. Calculate Active Subscription Revenue & Count
 $subQuery = "
-    SELECT COALESCE(SUM(subscription_amount), 0) AS total_sub_earnings
+    SELECT 
+        COALESCE(SUM(subscription_amount), 0) AS total_sub_earnings,
+        COUNT(*) AS active_sub_count
     FROM drivers
     WHERE subscription_status = 'active'
 ";
 $subResult = $conn->query($subQuery);
-$totalSubEarnings = (float)$subResult->fetch_assoc()['total_sub_earnings'];
+$subData = $subResult->fetch_assoc();
+$totalSubEarnings = (float)$subData['total_sub_earnings'];
+$activeSubCount = (int)$subData['active_sub_count'];
 
-$totalPlatformEarnings = $platformCommission + $totalSubEarnings;
+$totalPlatformEarnings = $totalSubEarnings;
 
 // 3. Driver Earnings List
 $driversQuery = "
@@ -73,8 +77,8 @@ if ($driversResult) {
         $row['id'] = (int)$row['id'];
         $row['completed_rides_count'] = (int)$row['completed_rides_count'];
         $row['gross_earnings'] = (float)$row['gross_earnings'];
-        $row['commission_deducted'] = $row['gross_earnings'] * $commissionRate;
-        $row['net_earnings'] = $row['gross_earnings'] * (1 - $commissionRate);
+        $row['commission_deducted'] = 0.00;
+        $row['net_earnings'] = $row['gross_earnings']; // 100% of fare goes to driver
         $row['subscription_amount'] = (float)$row['subscription_amount'];
         $driversEarnings[] = $row;
     }
@@ -84,9 +88,10 @@ echo json_encode([
     "success" => true,
     "platform" => [
         "total_gross_fare" => $totalGrossFare,
-        "commission_rate" => $commissionRate * 100,
-        "commission_earnings" => $platformCommission,
+        "commission_rate" => 0,
+        "commission_earnings" => 0.00,
         "subscription_earnings" => $totalSubEarnings,
+        "active_sub_count" => $activeSubCount,
         "total_earnings" => $totalPlatformEarnings,
         "total_completed_rides" => $totalCompletedRides
     ],
