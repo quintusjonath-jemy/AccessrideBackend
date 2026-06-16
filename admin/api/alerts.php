@@ -14,6 +14,11 @@ $controller = new AlertController();
 
 $method = $_SERVER['REQUEST_METHOD'];
 
+if ($method === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
 
 // GET ALERTS
 if($method === "GET") {
