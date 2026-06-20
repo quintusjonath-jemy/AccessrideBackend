@@ -82,11 +82,8 @@ class Schedule
         } else if ($hasWheelchairCol) {
             // Map vehicle type to valid wheelchair_type enum values ('manual', 'motorized', 'none')
             $wheelchairValue = "none";
-            $pickupModified = $pickup;
             if (strtolower($vehicleType) === 'van') {
                 $wheelchairValue = "manual";
-            } else {
-                $pickupModified .= " (Vehicle: " . ucfirst($vehicleType) . ")";
             }
 
             $sql = "INSERT INTO {$this->table} (
@@ -102,17 +99,12 @@ class Schedule
 
             $stmt = $this->conn->prepare($sql);
             if ($hasDistanceCol) {
-                $stmt->bind_param("iissdsds", $driverId, $userId, $pickupModified, $dropoff, $fare, $dateTime, $wheelchairValue, $distance);
+                $stmt->bind_param("iissdsds", $driverId, $userId, $pickup, $dropoff, $fare, $dateTime, $wheelchairValue, $distance);
             } else {
-                $stmt->bind_param("iissdss", $driverId, $userId, $pickupModified, $dropoff, $fare, $dateTime, $wheelchairValue);
+                $stmt->bind_param("iissdss", $driverId, $userId, $pickup, $dropoff, $fare, $dateTime, $wheelchairValue);
             }
         } else {
-            // Fallback: If neither column exists, store vehicle selection in pickup_location suffix
-            $pickupModified = $pickup;
-            if (!empty($vehicleType) && $vehicleType !== 'none') {
-                $pickupModified .= " (Vehicle: " . ucfirst($vehicleType) . ")";
-            }
-
+            // Fallback: If neither column exists, store without vehicle selection in pickup_location suffix
             $sql = "INSERT INTO {$this->table} (
                 driver_id,
                 user_id,
@@ -125,9 +117,9 @@ class Schedule
 
             $stmt = $this->conn->prepare($sql);
             if ($hasDistanceCol) {
-                $stmt->bind_param("iissdsd", $driverId, $userId, $pickupModified, $dropoff, $fare, $dateTime, $distance);
+                $stmt->bind_param("iissdsd", $driverId, $userId, $pickup, $dropoff, $fare, $dateTime, $distance);
             } else {
-                $stmt->bind_param("iissds", $driverId, $userId, $pickupModified, $dropoff, $fare, $dateTime);
+                $stmt->bind_param("iissds", $driverId, $userId, $pickup, $dropoff, $fare, $dateTime);
             }
         }
 
@@ -172,11 +164,8 @@ class Schedule
         } else if ($hasWheelchairCol) {
             // Map vehicle type to valid wheelchair_type enum values ('manual', 'motorized', 'none')
             $wheelchairValue = "none";
-            $pickupModified = $pickup;
             if (strtolower($vehicleType) === 'van') {
                 $wheelchairValue = "manual";
-            } else {
-                $pickupModified .= " (Vehicle: " . ucfirst($vehicleType) . ")";
             }
 
             $sql = "UPDATE {$this->table}
@@ -191,16 +180,11 @@ class Schedule
 
             $stmt = $this->conn->prepare($sql);
             if ($hasDistanceCol) {
-                $stmt->bind_param("sssdsdii", $pickupModified, $dropoff, $dateTime, $fare, $wheelchairValue, $distance, $rideId, $userId);
+                $stmt->bind_param("sssdsdii", $pickup, $dropoff, $dateTime, $fare, $wheelchairValue, $distance, $rideId, $userId);
             } else {
-                $stmt->bind_param("sssdsii", $pickupModified, $dropoff, $dateTime, $fare, $wheelchairValue, $rideId, $userId);
+                $stmt->bind_param("sssdsii", $pickup, $dropoff, $dateTime, $fare, $wheelchairValue, $rideId, $userId);
             }
         } else {
-            $pickupModified = $pickup;
-            if (!empty($vehicleType) && $vehicleType !== 'none') {
-                $pickupModified .= " (Vehicle: " . ucfirst($vehicleType) . ")";
-            }
-
             $sql = "UPDATE {$this->table}
                 SET pickup_location = ?,
                     dropoff_location = ?,
@@ -212,9 +196,9 @@ class Schedule
 
             $stmt = $this->conn->prepare($sql);
             if ($hasDistanceCol) {
-                $stmt->bind_param("sssddii", $pickupModified, $dropoff, $dateTime, $fare, $distance, $rideId, $userId);
+                $stmt->bind_param("sssddii", $pickup, $dropoff, $dateTime, $fare, $distance, $rideId, $userId);
             } else {
-                $stmt->bind_param("sssdii", $pickupModified, $dropoff, $dateTime, $fare, $rideId, $userId);
+                $stmt->bind_param("sssdii", $pickup, $dropoff, $dateTime, $fare, $rideId, $userId);
             }
         }
 

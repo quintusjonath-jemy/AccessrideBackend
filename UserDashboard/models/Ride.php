@@ -167,12 +167,7 @@ class Ride
                 $stmt->bind_param("iisssdss", $driverId, $userId, $pickup, $dropoff, $status, $fare, $dateTime, $vehicleType);
             }
         } else {
-            // Fallback: If neither column exists, store vehicle selection in pickup_location suffix
-            $pickupModified = $pickup;
-            if (!empty($vehicleType) && $vehicleType !== 'none') {
-                $pickupModified .= " (Vehicle: " . ucfirst($vehicleType) . ")";
-            }
-
+            // Fallback: If neither column exists, store without vehicle selection in pickup_location suffix
             $sql = "INSERT INTO {$this->table} (
                 driver_id,
                 user_id,
@@ -185,9 +180,9 @@ class Ride
 
             $stmt = $this->conn->prepare($sql);
             if ($hasDistanceCol) {
-                $stmt->bind_param("iisssdsd", $driverId, $userId, $pickupModified, $dropoff, $status, $fare, $dateTime, $distance);
+                $stmt->bind_param("iisssdsd", $driverId, $userId, $pickup, $dropoff, $status, $fare, $dateTime, $distance);
             } else {
-                $stmt->bind_param("iisssds", $driverId, $userId, $pickupModified, $dropoff, $status, $fare, $dateTime);
+                $stmt->bind_param("iisssds", $driverId, $userId, $pickup, $dropoff, $status, $fare, $dateTime);
             }
         }
 
