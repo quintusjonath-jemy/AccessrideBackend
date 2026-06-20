@@ -31,7 +31,7 @@ class Driver {
             }
         }
 
-        $result = $this->conn->query("SELECT id, TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))) AS name, email, phone, vehicle_number, vehicle_type, status, current_location, created_at, latitude, longitude, subscription_status, subscription_expires_at, last_payment_date, subscription_amount FROM drivers");
+        $result = $this->conn->query("SELECT d.id, TRIM(CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, ''))) AS name, d.email, d.phone, v.vehicle_number, v.vehicle_type, d.status, d.current_location, d.created_at, d.latitude, d.longitude, d.subscription_status, d.subscription_expires_at, d.last_payment_date, d.subscription_amount FROM drivers d LEFT JOIN vehicles v ON d.id = v.driver_id");
         $drivers = [];
 
         while ($row = $result->fetch_assoc()) {
@@ -43,7 +43,7 @@ class Driver {
 
     // GET ONE DRIVER
     public function getDriverById($id) {
-        $stmt = $this->conn->prepare("SELECT id, TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))) AS name, email, phone, vehicle_number, vehicle_type, status, current_location, created_at, latitude, longitude, subscription_status, subscription_expires_at, last_payment_date, subscription_amount FROM drivers WHERE id=?");
+        $stmt = $this->conn->prepare("SELECT d.id, TRIM(CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, ''))) AS name, d.email, d.phone, v.vehicle_number, v.vehicle_type, d.status, d.current_location, d.created_at, d.latitude, d.longitude, d.subscription_status, d.subscription_expires_at, d.last_payment_date, d.subscription_amount FROM drivers d LEFT JOIN vehicles v ON d.id = v.driver_id WHERE d.id=?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
 
@@ -59,8 +59,6 @@ class Driver {
                 last_name,
                 email,
                 phone,
-                vehicle_number,
-                vehicle_type,
                 status,
                 current_location,
                 subscription_status,
@@ -68,8 +66,7 @@ class Driver {
                 last_payment_date,
                 subscription_amount
             )
-
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ";
 
         $parts = explode(' ', trim($data['name']), 2);
@@ -84,13 +81,11 @@ class Driver {
         $sub_amount = isset($data['subscription_amount']) ? (float)$data['subscription_amount'] : 29.99;
 
         $stmt->bind_param(
-            "sssssssssssd",
+            "sssssssssd",
             $first_name,
             $last_name,
             $data['email'],
             $data['phone'],
-            $data['vehicle_number'],
-            $data['vehicle_type'],
             $data['status'],
             $data['current_location'],
             $sub_status,
@@ -99,7 +94,18 @@ class Driver {
             $sub_amount
         );
 
-        return $stmt->execute();
+        if ($stmt->execute()) {
+            $driver_id = $this->conn->insert_id;
+            $veh_stmt = $this->conn->prepare("INSERT INTO vehicles (driver_id, vehicle_number, vehicle_type) VALUES (?, ?, ?)");
+            $veh_stmt->bind_param(
+                "iss",
+                $driver_id,
+                $data['vehicle_number'],
+                $data['vehicle_type']
+            );
+            return $veh_stmt->execute();
+        }
+        return false;
     }
 
     // UPDATE DRIVER
@@ -135,8 +141,6 @@ class Driver {
                 last_name=?,
                 email=?,
                 phone=?,
-                vehicle_number=?,
-                vehicle_type=?,
                 status=?,
                 current_location=?,
                 subscription_status=?,
@@ -158,13 +162,11 @@ class Driver {
         $sub_amount = isset($data['subscription_amount']) ? (float)$data['subscription_amount'] : 29.99;
 
         $stmt->bind_param(
-            "sssssssssssdi",
+            "sssssssssdi",
             $first_name,
             $last_name,
             $data['email'],
             $data['phone'],
-            $data['vehicle_number'],
-            $data['vehicle_type'],
             $data['status'],
             $data['current_location'],
             $sub_status,
@@ -174,7 +176,24 @@ class Driver {
             $data['id']
         );
 
-        return $stmt->execute();
+        if ($stmt->execute()) {
+            $driver_id = (int)$data['id'];
+            $veh_stmt = $this->conn->prepare("
+                INSERT INTO vehicles (driver_id, vehicle_number, vehicle_type)
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE vehicle_number=?, vehicle_type=?
+            ");
+            $veh_stmt->bind_param(
+                "issss",
+                $driver_id,
+                $data['vehicle_number'],
+                $data['vehicle_type'],
+                $data['vehicle_number'],
+                $data['vehicle_type']
+            );
+            return $veh_stmt->execute();
+        }
+        return false;
     }
 
     // DELETE DRIVER

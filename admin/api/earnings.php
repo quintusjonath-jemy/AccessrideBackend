@@ -57,16 +57,17 @@ $driversQuery = "
     SELECT 
         d.id,
         TRIM(CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, ''))) AS name,
-        d.vehicle_number,
-        d.vehicle_type,
+        v.vehicle_number,
+        v.vehicle_type,
         d.phone,
         d.subscription_status,
         d.subscription_amount,
         COUNT(r.id) AS completed_rides_count,
         COALESCE(SUM(r.fare), 0) AS gross_earnings
     FROM drivers d
+    LEFT JOIN vehicles v ON d.id = v.driver_id
     LEFT JOIN rides r ON d.id = r.driver_id AND r.status = 'completed'
-    GROUP BY d.id
+    GROUP BY d.id, v.vehicle_number, v.vehicle_type
     ORDER BY gross_earnings DESC
 ";
 $driversResult = $conn->query($driversQuery);
