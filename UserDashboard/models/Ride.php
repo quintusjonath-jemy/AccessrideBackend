@@ -109,7 +109,13 @@ class Ride
     private function getDefaultDriverId($vehicleType = null)
     {
         if ($vehicleType) {
-            $stmt = $this->conn->prepare("SELECT id FROM drivers WHERE LOWER(vehicle_type) = LOWER(?) LIMIT 1");
+            $stmt = $this->conn->prepare("
+                SELECT d.id 
+                FROM drivers d 
+                JOIN vehicles v ON d.id = v.driver_id 
+                WHERE LOWER(v.vehicle_type) = LOWER(?) 
+                LIMIT 1
+            ");
             if ($stmt) {
                 $stmt->bind_param("s", $vehicleType);
                 $stmt->execute();
