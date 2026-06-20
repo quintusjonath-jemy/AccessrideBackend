@@ -35,5 +35,94 @@ class Settings {
 
         return null;
     }
+
+    // GET NOTIFICATION SETTINGS
+    public function getNotifications($admin_id) {
+        $stmt = $this->conn->prepare("
+            SELECT
+                sos_alert,
+                ride_alert,
+                driver_alert,
+                email_notifications
+            FROM " . $this->table . "
+            WHERE admin_id=?
+        ");
+        $stmt->bind_param("i", $admin_id);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        if ($res) {
+            $res['sos_alert'] = (int)$res['sos_alert'];
+            $res['ride_alert'] = (int)$res['ride_alert'];
+            $res['driver_alert'] = (int)$res['driver_alert'];
+            $res['email_notifications'] = (int)$res['email_notifications'];
+        }
+        return $res;
+    }
+
+    // UPDATE NOTIFICATION SETTINGS
+    public function updateNotifications($admin_id, $data) {
+        $stmt = $this->conn->prepare("
+            UPDATE " . $this->table . "
+            SET
+                sos_alert=?,
+                ride_alert=?,
+                driver_alert=?,
+                email_notifications=?
+            WHERE admin_id=?
+        ");
+        $stmt->bind_param(
+            "iiiii",
+            $data['sos_alert'],
+            $data['ride_alert'],
+            $data['driver_alert'],
+            $data['email_notifications'],
+            $admin_id
+        );
+        return $stmt->execute();
+    }
+
+    // GET SYSTEM SETTINGS
+    public function getSystemSettings($admin_id) {
+        $stmt = $this->conn->prepare("
+            SELECT
+                theme,
+                refresh_rate,
+                sos_enabled,
+                tracking_enabled
+            FROM " . $this->table . "
+            WHERE admin_id=?
+        ");
+        $stmt->bind_param("i", $admin_id);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        if ($res) {
+            $res['refresh_rate'] = (int)$res['refresh_rate'];
+            $res['sos_enabled'] = (int)$res['sos_enabled'];
+            $res['tracking_enabled'] = (int)$res['tracking_enabled'];
+        }
+        return $res;
+    }
+
+    // UPDATE SYSTEM SETTINGS
+    public function updateSystemSettings($admin_id, $data) {
+        $stmt = $this->conn->prepare("
+            UPDATE " . $this->table . "
+            SET
+                theme=?,
+                refresh_rate=?,
+                sos_enabled=?,
+                tracking_enabled=?
+            WHERE admin_id=?
+        ");
+        $stmt->bind_param(
+            "siiii",
+            $data['theme'],
+            $data['refresh_rate'],
+            $data['sos_enabled'],
+            $data['tracking_enabled'],
+            $admin_id
+        );
+        return $stmt->execute();
+    }
 }
 ?>

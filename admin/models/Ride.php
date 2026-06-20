@@ -27,7 +27,7 @@ class Ride {
 
                 drivers.current_location AS driver_current_location,
 
-                drivers.vehicle_type AS vehicle_type,
+                vehicles.vehicle_type AS vehicle_type,
 
                 drivers.status AS driver_status,
 
@@ -40,6 +40,9 @@ class Ride {
 
             LEFT JOIN drivers
             ON rides.driver_id = drivers.id
+
+            LEFT JOIN vehicles
+            ON drivers.id = vehicles.driver_id
 
             LEFT JOIN payments
             ON rides.id = payments.ride_id

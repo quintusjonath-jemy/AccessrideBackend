@@ -34,13 +34,14 @@ $users = $userStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 /* ---------------- DRIVERS ---------------- */
 $driverStmt = $conn->prepare("
-    SELECT id, TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))) AS name, email, phone, vehicle_number, vehicle_type
-    FROM drivers
-    WHERE CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) LIKE ? 
-       OR email LIKE ? 
-       OR phone LIKE ? 
-       OR vehicle_number LIKE ? 
-       OR vehicle_type LIKE ?
+    SELECT d.id, TRIM(CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, ''))) AS name, d.email, d.phone, v.vehicle_number, v.vehicle_type
+    FROM drivers d
+    LEFT JOIN vehicles v ON d.id = v.driver_id
+    WHERE CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, '')) LIKE ? 
+       OR d.email LIKE ? 
+       OR d.phone LIKE ? 
+       OR v.vehicle_number LIKE ? 
+       OR v.vehicle_type LIKE ?
     LIMIT 5
 ");
 $driverStmt->bind_param("sssss", $search, $search, $search, $search, $search);
@@ -53,14 +54,15 @@ $rideStmt = $conn->prepare("
     FROM rides
     LEFT JOIN users ON rides.user_id = users.id
     LEFT JOIN drivers ON rides.driver_id = drivers.id
+    LEFT JOIN vehicles ON drivers.id = vehicles.driver_id
     WHERE rides.pickup_location LIKE ?
        OR rides.dropoff_location LIKE ?
        OR rides.status LIKE ?
        OR rides.id LIKE ?
        OR CONCAT(COALESCE(users.first_name, ''), ' ', COALESCE(users.last_name, '')) LIKE ?
        OR CONCAT(COALESCE(drivers.first_name, ''), ' ', COALESCE(drivers.last_name, '')) LIKE ?
-       OR drivers.vehicle_number LIKE ?
-       OR drivers.vehicle_type LIKE ?
+       OR vehicles.vehicle_number LIKE ?
+       OR vehicles.vehicle_type LIKE ?
     LIMIT 5
 ");
 $rideStmt->bind_param("ssssssss", $search, $search, $search, $search, $search, $search, $search, $search);

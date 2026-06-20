@@ -24,7 +24,30 @@ class SettingsController {
                 "success" => false,
                 "message" => "Settings not found for admin ID: " . $admin_id
             ]);
-        }
+    }
+
+    public function getNotifications($admin_id) {
+        $data = $this->settings->getNotifications($admin_id);
+        echo json_encode($data);
+    }
+
+    public function updateNotifications($admin_id, $data) {
+        $success = $this->settings->updateNotifications($admin_id, $data);
+        echo json_encode([
+            "success" => $success
+        ]);
+    }
+
+    public function getSystemSettings($admin_id) {
+        $data = $this->settings->getSystemSettings($admin_id);
+        echo json_encode($data);
+    }
+
+    public function updateSystemSettings($admin_id, $data) {
+        $success = $this->settings->updateSystemSettings($admin_id, $data);
+        echo json_encode([
+            "success" => $success
+        ]);
     }
 }
 ?>
