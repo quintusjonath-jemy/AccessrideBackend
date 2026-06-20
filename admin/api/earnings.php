@@ -40,10 +40,10 @@ $platformCommission = 0.00;
 // 2. Calculate Active Subscription Revenue & Count
 $subQuery = "
     SELECT 
-        COALESCE(SUM(subscription_amount), 0) AS total_sub_earnings,
+        COALESCE(SUM(amount), 0) AS total_sub_earnings,
         COUNT(*) AS active_sub_count
-    FROM drivers
-    WHERE subscription_status = 'active'
+    FROM subscriptions
+    WHERE status = 'active'
 ";
 $subResult = $conn->query($subQuery);
 $subData = $subResult->fetch_assoc();
@@ -60,14 +60,15 @@ $driversQuery = "
         v.vehicle_number,
         v.vehicle_type,
         d.phone,
-        d.subscription_status,
-        d.subscription_amount,
+        s.status AS subscription_status,
+        s.amount AS subscription_amount,
         COUNT(r.id) AS completed_rides_count,
         COALESCE(SUM(r.fare), 0) AS gross_earnings
     FROM drivers d
     LEFT JOIN vehicles v ON d.id = v.driver_id
+    LEFT JOIN subscriptions s ON d.id = s.driver_id
     LEFT JOIN rides r ON d.id = r.driver_id AND r.status = 'completed'
-    GROUP BY d.id, v.vehicle_number, v.vehicle_type
+    GROUP BY d.id, v.vehicle_number, v.vehicle_type, s.status, s.amount
     ORDER BY gross_earnings DESC
 ";
 $driversResult = $conn->query($driversQuery);
