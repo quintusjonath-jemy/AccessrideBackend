@@ -43,12 +43,13 @@ try {
             r.*, 
             TRIM(CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, ''))) AS driver_name, 
             d.phone AS driver_phone, 
-            d.vehicle_number AS driver_vehicle_number, 
-            d.vehicle_type AS driver_vehicle_type, 
+            v.vehicle_number AS driver_vehicle_number, 
+            v.vehicle_type AS driver_vehicle_type, 
             d.latitude AS driver_lat, 
             d.longitude AS driver_lng
         FROM rides r
         LEFT JOIN drivers d ON r.driver_id = d.id
+        LEFT JOIN vehicles v ON d.id = v.driver_id
         WHERE r.user_id = ?
         AND r.status IN ('pending', 'accepted', 'active')
         ORDER BY r.id DESC
