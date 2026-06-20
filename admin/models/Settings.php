@@ -8,8 +8,25 @@ class Settings {
         $this->conn = $db;
     }
 
+    private function ensureSettingsExist($admin_id) {
+        $sql = "SELECT id FROM " . $this->table . " WHERE admin_id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $admin_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            // Insert default row
+            $insert_sql = "INSERT INTO " . $this->table . " (admin_id, sos_alert, ride_alert, driver_alert, email_notifications, theme, refresh_rate, sos_enabled, tracking_enabled) VALUES (?, 1, 1, 1, 0, 'light', 5, 1, 1)";
+            $insert_stmt = $this->conn->prepare($insert_sql);
+            $insert_stmt->bind_param("i", $admin_id);
+            $insert_stmt->execute();
+        }
+    }
+
     // GET SETTINGS FOR AN ADMIN
     public function getSettingsByAdminId($admin_id) {
+        $this->ensureSettingsExist($admin_id);
         $sql = "SELECT * FROM " . $this->table . " WHERE admin_id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("i", $admin_id);
@@ -38,6 +55,7 @@ class Settings {
 
     // GET NOTIFICATION SETTINGS
     public function getNotifications($admin_id) {
+        $this->ensureSettingsExist($admin_id);
         $stmt = $this->conn->prepare("
             SELECT
                 sos_alert,
@@ -61,6 +79,7 @@ class Settings {
 
     // UPDATE NOTIFICATION SETTINGS
     public function updateNotifications($admin_id, $data) {
+        $this->ensureSettingsExist($admin_id);
         $stmt = $this->conn->prepare("
             UPDATE " . $this->table . "
             SET
@@ -83,6 +102,7 @@ class Settings {
 
     // GET SYSTEM SETTINGS
     public function getSystemSettings($admin_id) {
+        $this->ensureSettingsExist($admin_id);
         $stmt = $this->conn->prepare("
             SELECT
                 theme,
@@ -105,6 +125,7 @@ class Settings {
 
     // UPDATE SYSTEM SETTINGS
     public function updateSystemSettings($admin_id, $data) {
+        $this->ensureSettingsExist($admin_id);
         $stmt = $this->conn->prepare("
             UPDATE " . $this->table . "
             SET
