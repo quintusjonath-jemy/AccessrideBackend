@@ -24,6 +24,7 @@ class SettingsController {
                 "success" => false,
                 "message" => "Settings not found for admin ID: " . $admin_id
             ]);
+        }
     }
 
     public function getNotifications($admin_id) {
