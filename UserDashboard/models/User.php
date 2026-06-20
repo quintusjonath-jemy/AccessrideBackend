@@ -13,7 +13,7 @@ class User
     public function getById($id)
     {
         $query = "
-            SELECT id, name, email, status, location
+            SELECT id, TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))) AS name, email, status, location
             FROM {$this->table}
             WHERE id = ?
         ";

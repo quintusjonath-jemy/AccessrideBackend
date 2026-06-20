@@ -41,7 +41,7 @@ try {
     $sql = "
         SELECT 
             r.*, 
-            d.name AS driver_name, 
+            TRIM(CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, ''))) AS driver_name, 
             d.phone AS driver_phone, 
             d.vehicle_number AS driver_vehicle_number, 
             d.vehicle_type AS driver_vehicle_type, 
