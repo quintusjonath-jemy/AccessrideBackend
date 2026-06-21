@@ -1,24 +1,24 @@
 <?php
-header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
+  exit(0);
 }
 
-include_once "../config/Database.php";
+include_once '../config/Database.php';
 
 $database = new Database();
 $conn = $database->connect();
 
 if (!$conn) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Database connection failed"
-    ]);
-    exit;
+  echo json_encode([
+    'success' => false,
+    'message' => 'Database connection failed'
+  ]);
+  exit;
 }
 
 // 1. Calculate Ride Commissions (Completed Rides)
@@ -31,11 +31,11 @@ $ridesQuery = "
 ";
 $ridesResult = $conn->query($ridesQuery);
 $ridesData = $ridesResult->fetch_assoc();
-$totalGrossFare = (float)$ridesData['total_gross_fare'];
-$totalCompletedRides = (int)$ridesData['total_completed_rides'];
+$totalGrossFare = (float) $ridesData['total_gross_fare'];
+$totalCompletedRides = (int) $ridesData['total_completed_rides'];
 
-$commissionRate = 0.00; // No commission
-$platformCommission = 0.00;
+$commissionRate = 0.0;  // No commission
+$platformCommission = 0.0;
 
 // 2. Calculate Active Subscription Revenue & Count
 $subQuery = "
@@ -47,8 +47,8 @@ $subQuery = "
 ";
 $subResult = $conn->query($subQuery);
 $subData = $subResult->fetch_assoc();
-$totalSubEarnings = (float)$subData['total_sub_earnings'];
-$activeSubCount = (int)$subData['active_sub_count'];
+$totalSubEarnings = (float) $subData['total_sub_earnings'];
+$activeSubCount = (int) $subData['active_sub_count'];
 
 $totalPlatformEarnings = $totalSubEarnings;
 
@@ -75,28 +75,28 @@ $driversResult = $conn->query($driversQuery);
 $driversEarnings = [];
 
 if ($driversResult) {
-    while ($row = $driversResult->fetch_assoc()) {
-        $row['id'] = (int)$row['id'];
-        $row['completed_rides_count'] = (int)$row['completed_rides_count'];
-        $row['gross_earnings'] = (float)$row['gross_earnings'];
-        $row['commission_deducted'] = 0.00;
-        $row['net_earnings'] = $row['gross_earnings']; // 100% of fare goes to driver
-        $row['subscription_amount'] = (float)$row['subscription_amount'];
-        $driversEarnings[] = $row;
-    }
+  while ($row = $driversResult->fetch_assoc()) {
+    $row['id'] = (int) $row['id'];
+    $row['completed_rides_count'] = (int) $row['completed_rides_count'];
+    $row['gross_earnings'] = (float) $row['gross_earnings'];
+    $row['commission_deducted'] = 0.0;
+    $row['net_earnings'] = $row['gross_earnings'];  // 100% of fare goes to driver
+    $row['subscription_amount'] = (float) $row['subscription_amount'];
+    $driversEarnings[] = $row;
+  }
 }
 
 echo json_encode([
-    "success" => true,
-    "platform" => [
-        "total_gross_fare" => $totalGrossFare,
-        "commission_rate" => 0,
-        "commission_earnings" => 0.00,
-        "subscription_earnings" => $totalSubEarnings,
-        "active_sub_count" => $activeSubCount,
-        "total_earnings" => $totalPlatformEarnings,
-        "total_completed_rides" => $totalCompletedRides
-    ],
-    "drivers" => $driversEarnings
+  'success' => true,
+  'platform' => [
+    'total_gross_fare' => $totalGrossFare,
+    'commission_rate' => 0,
+    'commission_earnings' => 0.0,
+    'subscription_earnings' => $totalSubEarnings,
+    'active_sub_count' => $activeSubCount,
+    'total_earnings' => $totalPlatformEarnings,
+    'total_completed_rides' => $totalCompletedRides
+  ],
+  'drivers' => $driversEarnings
 ]);
 ?>

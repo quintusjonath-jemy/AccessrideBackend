@@ -3,38 +3,35 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
 
-include_once "../config/Database.php";
+include_once '../config/Database.php';
 
 // DATABASE CONNECTION
 $database = new Database();
 
 $conn = $database->connect();
 
-
 // TOTAL DRIVERS
-$driversQuery = "
+$driversQuery = '
     SELECT COUNT(*) as totalDrivers
     FROM drivers
-";
+';
 
 $driversResult = $conn->query($driversQuery);
 
 $totalDrivers = $driversResult->fetch_assoc()['totalDrivers'];
 
-
 // TOTAL RIDES
-$ridesQuery = "
+$ridesQuery = '
     SELECT COUNT(*) as totalRides
     FROM rides
-";
+';
 
 $ridesResult = $conn->query($ridesQuery);
 
 $totalRides = $ridesResult->fetch_assoc()['totalRides'];
-
 
 // ACTIVE RIDES
 $activeQuery = "
@@ -47,16 +44,11 @@ $activeResult = $conn->query($activeQuery);
 
 $activeRides = $activeResult->fetch_assoc()['activeRides'];
 
-
 // RETURN JSON
 echo json_encode([
-
-    "totalDrivers" => $totalDrivers,
-
-    "totalRides" => $totalRides,
-
-    "activeRides" => $activeRides
-
+  'totalDrivers' => $totalDrivers,
+  'totalRides' => $totalRides,
+  'activeRides' => $activeRides
 ]);
 
 ?>

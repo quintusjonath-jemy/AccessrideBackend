@@ -1,60 +1,66 @@
 <?php
 
-include_once "../config/Database.php";
-include_once "../models/Driver.php";
+include_once '../config/Database.php';
+include_once '../models/Driver.php';
 
-class DriverController {
+class DriverController
+{
+  private $driver;
 
-    private $driver;
+  public function __construct()
+  {
+    $db = (new Database())->connect();
+    $this->driver = new Driver($db);
+  }
 
-    public function __construct() {
-        $db = (new Database())->connect();
-        $this->driver = new Driver($db);
-    }
+  public function index()
+  {
+    echo json_encode($this->driver->getDrivers());
+  }
 
-    public function index() {
-        echo json_encode($this->driver->getDrivers());
-    }
+  public function show($id)
+  {
+    echo json_encode($this->driver->getDriverById($id));
+  }
 
-    public function show($id) {
-        echo json_encode($this->driver->getDriverById($id));
-    }
+  public function store($data)
+  {
+    echo json_encode([
+      'success' => $this->driver->addDriver($data)
+    ]);
+  }
 
-    public function store($data) {
-        echo json_encode([
-            "success" => $this->driver->addDriver($data)
-        ]);
-    }
+  public function update($data)
+  {
+    echo json_encode([
+      'success' => $this->driver->updateDriver($data)
+    ]);
+  }
 
-    public function update($data) {
-        echo json_encode([
-            "success" => $this->driver->updateDriver($data)
-        ]);
-    }
+  public function destroy($id)
+  {
+    echo json_encode([
+      'success' => $this->driver->deleteDriver($id)
+    ]);
+  }
 
-    public function destroy($id) {
-        echo json_encode([
-            "success" => $this->driver->deleteDriver($id)
-        ]);
-    }
+  // UPDATE LOCATION
+  public function updateLocation($data)
+  {
+    $success =
+      $this->driver->updateLocation($data);
 
-    // UPDATE LOCATION
-    public function updateLocation($data) {
+    echo json_encode([
+      'success' => $success
+    ]);
+  }
 
-        $success =
-            $this->driver->updateLocation($data);
-
-        echo json_encode([
-            "success" => $success
-        ]);
-    }
-
-    public function toggleStatus($id) {
-
-        echo json_encode([
-            "success" =>
-            $this->driver->toggleDriverStatus($id)
-        ]);
-    }
+  public function toggleStatus($id)
+  {
+    echo json_encode([
+      'success' =>
+        $this->driver->toggleDriverStatus($id)
+    ]);
+  }
 }
 ?>

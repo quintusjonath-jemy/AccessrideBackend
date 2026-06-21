@@ -1,74 +1,76 @@
 <?php
 
-include_once "../config/Database.php";
-include_once "../models/Admin.php";
+include_once '../config/Database.php';
+include_once '../models/Admin.php';
 
-class AdminController {
+class AdminController
+{
+  private $admin;
 
-    private $admin;
+  public function __construct()
+  {
+    $database = new Database();
 
-    public function __construct() {
+    $db = $database->connect();
 
-        $database = new Database();
+    $this->admin = new Admin($db);
+  }
 
-        $db = $database->connect();
+  // GET ADMIN
 
-        $this->admin = new Admin($db);
-    }
+  public function index($id)
+  {
+    echo json_encode(
+      $this->admin->getAdmin($id)
+    );
+  }
 
-    // GET ADMIN
-   public function index($id) {
+  public function updateProfile($data)
+  {
+    echo json_encode([
+      'success' =>
+        $this->admin->updateProfile($data)
+    ]);
+  }
 
-        echo json_encode(
-            $this->admin->getAdmin($id)
-        );
-    }
+  // UPDATE PASSWORD
+  public function updatePassword($data)
+  {
+    echo json_encode([
+      'success' =>
+        $this->admin->updatePassword($data)
+    ]);
+  }
 
-    public function updateProfile($data) {
+  public function getNotifications($id)
+  {
+    echo json_encode(
+      $this->admin->getNotifications($id)
+    );
+  }
 
-        echo json_encode([
-            "success" =>
-            $this->admin->updateProfile($data)
-        ]);
-    }
+  public function updateNotifications($data)
+  {
+    echo json_encode([
+      'success' =>
+        $this->admin->updateNotifications($data)
+    ]);
+  }
 
-    // UPDATE PASSWORD
-    public function updatePassword($data) {
+  public function getSystemSettings($id)
+  {
+    echo json_encode(
+      $this->admin->getSystemSettings($id)
+    );
+  }
 
-        echo json_encode([
-            "success" =>
-            $this->admin->updatePassword($data)
-        ]);
-    }
-
-    public function getNotifications($id) {
-
-        echo json_encode(
-            $this->admin->getNotifications($id)
-        );
-    }
-
-
-    public function updateNotifications($data) {
-
-        echo json_encode([
-            "success" =>
-            $this->admin->updateNotifications($data)
-        ]);
-    }
-
-    public function getSystemSettings($id) {
-        echo json_encode(
-            $this->admin->getSystemSettings($id)
-        );
-    }
-
-    public function updateSystemSettings($data) {
-        echo json_encode([
-            "success" =>
-            $this->admin->updateSystemSettings($data)
-        ]);
-    }
+  public function updateSystemSettings($data)
+  {
+    echo json_encode([
+      'success' =>
+        $this->admin->updateSystemSettings($data)
+    ]);
+  }
 }
 
 ?>
