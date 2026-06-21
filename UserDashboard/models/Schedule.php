@@ -2,67 +2,67 @@
 
 class Schedule
 {
-    private $conn;
-    private $table = "rides";
+  private $conn;
+  private $table = 'rides';
 
-    public function __construct($db)
-    {
-        $this->conn = $db;
-    }
+  public function __construct($db)
+  {
+    $this->conn = $db;
+  }
 
-    // Helper to check if a column exists in the rides table dynamically
-    private function hasColumn($column)
-    {
-        $result = $this->conn->query("SHOW COLUMNS FROM {$this->table} LIKE '{$column}'");
-        return $result && $result->num_rows > 0;
-    }
+  // Helper to check if a column exists in the rides table dynamically
+  private function hasColumn($column)
+  {
+    $result = $this->conn->query("SHOW COLUMNS FROM {$this->table} LIKE '{$column}'");
+    return $result && $result->num_rows > 0;
+  }
 
-    // Helper to get first driver in the database matching vehicle type
-    private function getDefaultDriverId($vehicleType = null)
-    {
-        if ($vehicleType) {
-            $stmt = $this->conn->prepare("
+  // Helper to get first driver in the database matching vehicle type
+  private function getDefaultDriverId($vehicleType = null)
+  {
+    if ($vehicleType) {
+      $stmt = $this->conn->prepare('
                 SELECT d.id 
                 FROM drivers d 
                 JOIN vehicles v ON d.id = v.driver_id 
                 WHERE LOWER(v.vehicle_type) = LOWER(?) 
                 LIMIT 1
-            ");
-            if ($stmt) {
-                $stmt->bind_param("s", $vehicleType);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                if ($result && $row = $result->fetch_assoc()) {
-                    return (int) $row['id'];
-                }
-            }
-        }
-
-        $result = $this->conn->query("SELECT id FROM drivers LIMIT 1");
+            ');
+      if ($stmt) {
+        $stmt->bind_param('s', $vehicleType);
+        $stmt->execute();
+        $result = $stmt->get_result();
         if ($result && $row = $result->fetch_assoc()) {
-            return (int) $row['id'];
+          return (int) $row['id'];
         }
-        return null; // No fallback to avoid foreign key violations
+      }
     }
 
-    // CREATE A NEW SCHEDULED RIDE
-    public function create($userId, $pickup, $dropoff, $dateTime, $fare, $vehicleType, $distance = 0.0)
-    {
-        $driverId = $this->getDefaultDriverId($vehicleType);
-        if ($driverId === null) {
-            return [
-                "success" => false,
-                "error" => "No drivers available. A driver must be assigned to schedule a ride."
-            ];
-        }
+    $result = $this->conn->query('SELECT id FROM drivers LIMIT 1');
+    if ($result && $row = $result->fetch_assoc()) {
+      return (int) $row['id'];
+    }
+    return null;  // No fallback to avoid foreign key violations
+  }
 
-        // Check column availability in the database
-        $hasVehicleCol = $this->hasColumn("vehicle_type");
-        $hasWheelchairCol = $this->hasColumn("wheelchair_type");
-        $hasDistanceCol = $this->hasColumn("distance_km");
+  // CREATE A NEW SCHEDULED RIDE
+  public function create($userId, $pickup, $dropoff, $dateTime, $fare, $vehicleType, $distance = 0.0)
+  {
+    $driverId = $this->getDefaultDriverId($vehicleType);
+    if ($driverId === null) {
+      return [
+        'success' => false,
+        'error' => 'No drivers available. A driver must be assigned to schedule a ride.'
+      ];
+    }
 
-        if ($hasVehicleCol) {
-            $sql = "INSERT INTO {$this->table} (
+    // Check column availability in the database
+    $hasVehicleCol = $this->hasColumn('vehicle_type');
+    $hasWheelchairCol = $this->hasColumn('wheelchair_type');
+    $hasDistanceCol = $this->hasColumn('distance_km');
+
+    if ($hasVehicleCol) {
+      $sql = "INSERT INTO {$this->table} (
                 driver_id,
                 user_id,
                 pickup_location,
@@ -70,23 +70,23 @@ class Schedule
                 status,
                 fare,
                 ride_date,
-                vehicle_type" . ($hasDistanceCol ? ", distance_km" : "") . "
-            ) VALUES (?, ?, ?, ?, 'scheduled', ?, ?, ?" . ($hasDistanceCol ? ", ?" : "") . ")";
-            
-            $stmt = $this->conn->prepare($sql);
-            if ($hasDistanceCol) {
-                $stmt->bind_param("iissdsds", $driverId, $userId, $pickup, $dropoff, $fare, $dateTime, $vehicleType, $distance);
-            } else {
-                $stmt->bind_param("iissdss", $driverId, $userId, $pickup, $dropoff, $fare, $dateTime, $vehicleType);
-            }
-        } else if ($hasWheelchairCol) {
-            // Map vehicle type to valid wheelchair_type enum values ('manual', 'motorized', 'none')
-            $wheelchairValue = "none";
-            if (strtolower($vehicleType) === 'van') {
-                $wheelchairValue = "manual";
-            }
+                vehicle_type" . ($hasDistanceCol ? ', distance_km' : '') . "
+            ) VALUES (?, ?, ?, ?, 'scheduled', ?, ?, ?" . ($hasDistanceCol ? ', ?' : '') . ')';
 
-            $sql = "INSERT INTO {$this->table} (
+      $stmt = $this->conn->prepare($sql);
+      if ($hasDistanceCol) {
+        $stmt->bind_param('iissdsds', $driverId, $userId, $pickup, $dropoff, $fare, $dateTime, $vehicleType, $distance);
+      } else {
+        $stmt->bind_param('iissdss', $driverId, $userId, $pickup, $dropoff, $fare, $dateTime, $vehicleType);
+      }
+    } else if ($hasWheelchairCol) {
+      // Map vehicle type to valid wheelchair_type enum values ('manual', 'motorized', 'none')
+      $wheelchairValue = 'none';
+      if (strtolower($vehicleType) === 'van') {
+        $wheelchairValue = 'manual';
+      }
+
+      $sql = "INSERT INTO {$this->table} (
                 driver_id,
                 user_id,
                 pickup_location,
@@ -94,124 +94,124 @@ class Schedule
                 status,
                 fare,
                 ride_date,
-                wheelchair_type" . ($hasDistanceCol ? ", distance_km" : "") . "
-            ) VALUES (?, ?, ?, ?, 'scheduled', ?, ?, ?" . ($hasDistanceCol ? ", ?" : "") . ")";
+                wheelchair_type" . ($hasDistanceCol ? ', distance_km' : '') . "
+            ) VALUES (?, ?, ?, ?, 'scheduled', ?, ?, ?" . ($hasDistanceCol ? ', ?' : '') . ')';
 
-            $stmt = $this->conn->prepare($sql);
-            if ($hasDistanceCol) {
-                $stmt->bind_param("iissdsds", $driverId, $userId, $pickup, $dropoff, $fare, $dateTime, $wheelchairValue, $distance);
-            } else {
-                $stmt->bind_param("iissdss", $driverId, $userId, $pickup, $dropoff, $fare, $dateTime, $wheelchairValue);
-            }
-        } else {
-            // Fallback: If neither column exists, store without vehicle selection in pickup_location suffix
-            $sql = "INSERT INTO {$this->table} (
+      $stmt = $this->conn->prepare($sql);
+      if ($hasDistanceCol) {
+        $stmt->bind_param('iissdsds', $driverId, $userId, $pickup, $dropoff, $fare, $dateTime, $wheelchairValue, $distance);
+      } else {
+        $stmt->bind_param('iissdss', $driverId, $userId, $pickup, $dropoff, $fare, $dateTime, $wheelchairValue);
+      }
+    } else {
+      // Fallback: If neither column exists, store without vehicle selection in pickup_location suffix
+      $sql = "INSERT INTO {$this->table} (
                 driver_id,
                 user_id,
                 pickup_location,
                 dropoff_location,
                 status,
                 fare,
-                ride_date" . ($hasDistanceCol ? ", distance_km" : "") . "
-            ) VALUES (?, ?, ?, ?, 'scheduled', ?, ?" . ($hasDistanceCol ? ", ?" : "") . ")";
+                ride_date" . ($hasDistanceCol ? ', distance_km' : '') . "
+            ) VALUES (?, ?, ?, ?, 'scheduled', ?, ?" . ($hasDistanceCol ? ', ?' : '') . ')';
 
-            $stmt = $this->conn->prepare($sql);
-            if ($hasDistanceCol) {
-                $stmt->bind_param("iissdsd", $driverId, $userId, $pickup, $dropoff, $fare, $dateTime, $distance);
-            } else {
-                $stmt->bind_param("iissds", $driverId, $userId, $pickup, $dropoff, $fare, $dateTime);
-            }
-        }
-
-        if ($stmt->execute()) {
-            return [
-                "success" => true,
-                "id" => $stmt->insert_id,
-                "driver_id" => $driverId
-            ];
-        }
-
-        return [
-            "success" => false,
-            "error" => $stmt->error
-        ];
+      $stmt = $this->conn->prepare($sql);
+      if ($hasDistanceCol) {
+        $stmt->bind_param('iissdsd', $driverId, $userId, $pickup, $dropoff, $fare, $dateTime, $distance);
+      } else {
+        $stmt->bind_param('iissds', $driverId, $userId, $pickup, $dropoff, $fare, $dateTime);
+      }
     }
 
-    // UPDATE AN EXISTING SCHEDULED RIDE
-    public function update($rideId, $userId, $pickup, $dropoff, $dateTime, $fare, $vehicleType, $distance = 0.0)
-    {
-        $hasVehicleCol = $this->hasColumn("vehicle_type");
-        $hasWheelchairCol = $this->hasColumn("wheelchair_type");
-        $hasDistanceCol = $this->hasColumn("distance_km");
+    if ($stmt->execute()) {
+      return [
+        'success' => true,
+        'id' => $stmt->insert_id,
+        'driver_id' => $driverId
+      ];
+    }
 
-        if ($hasVehicleCol) {
-            $sql = "UPDATE {$this->table}
+    return [
+      'success' => false,
+      'error' => $stmt->error
+    ];
+  }
+
+  // UPDATE AN EXISTING SCHEDULED RIDE
+  public function update($rideId, $userId, $pickup, $dropoff, $dateTime, $fare, $vehicleType, $distance = 0.0)
+  {
+    $hasVehicleCol = $this->hasColumn('vehicle_type');
+    $hasWheelchairCol = $this->hasColumn('wheelchair_type');
+    $hasDistanceCol = $this->hasColumn('distance_km');
+
+    if ($hasVehicleCol) {
+      $sql = "UPDATE {$this->table}
                 SET pickup_location = ?,
                     dropoff_location = ?,
                     ride_date = ?,
                     fare = ?,
-                    vehicle_type = ?" . ($hasDistanceCol ? ", distance_km = ?" : "") . "
+                    vehicle_type = ?" . ($hasDistanceCol ? ', distance_km = ?' : '') . "
                 WHERE id = ?
                 AND user_id = ?
                 AND status = 'scheduled'";
-            
-            $stmt = $this->conn->prepare($sql);
-            if ($hasDistanceCol) {
-                $stmt->bind_param("sssdsdii", $pickup, $dropoff, $dateTime, $fare, $vehicleType, $distance, $rideId, $userId);
-            } else {
-                $stmt->bind_param("sssdsii", $pickup, $dropoff, $dateTime, $fare, $vehicleType, $rideId, $userId);
-            }
-        } else if ($hasWheelchairCol) {
-            // Map vehicle type to valid wheelchair_type enum values ('manual', 'motorized', 'none')
-            $wheelchairValue = "none";
-            if (strtolower($vehicleType) === 'van') {
-                $wheelchairValue = "manual";
-            }
 
-            $sql = "UPDATE {$this->table}
+      $stmt = $this->conn->prepare($sql);
+      if ($hasDistanceCol) {
+        $stmt->bind_param('sssdsdii', $pickup, $dropoff, $dateTime, $fare, $vehicleType, $distance, $rideId, $userId);
+      } else {
+        $stmt->bind_param('sssdsii', $pickup, $dropoff, $dateTime, $fare, $vehicleType, $rideId, $userId);
+      }
+    } else if ($hasWheelchairCol) {
+      // Map vehicle type to valid wheelchair_type enum values ('manual', 'motorized', 'none')
+      $wheelchairValue = 'none';
+      if (strtolower($vehicleType) === 'van') {
+        $wheelchairValue = 'manual';
+      }
+
+      $sql = "UPDATE {$this->table}
                 SET pickup_location = ?,
                     dropoff_location = ?,
                     ride_date = ?,
                     fare = ?,
-                    wheelchair_type = ?" . ($hasDistanceCol ? ", distance_km = ?" : "") . "
+                    wheelchair_type = ?" . ($hasDistanceCol ? ', distance_km = ?' : '') . "
                 WHERE id = ?
                 AND user_id = ?
                 AND status = 'scheduled'";
 
-            $stmt = $this->conn->prepare($sql);
-            if ($hasDistanceCol) {
-                $stmt->bind_param("sssdsdii", $pickup, $dropoff, $dateTime, $fare, $wheelchairValue, $distance, $rideId, $userId);
-            } else {
-                $stmt->bind_param("sssdsii", $pickup, $dropoff, $dateTime, $fare, $wheelchairValue, $rideId, $userId);
-            }
-        } else {
-            $sql = "UPDATE {$this->table}
+      $stmt = $this->conn->prepare($sql);
+      if ($hasDistanceCol) {
+        $stmt->bind_param('sssdsdii', $pickup, $dropoff, $dateTime, $fare, $wheelchairValue, $distance, $rideId, $userId);
+      } else {
+        $stmt->bind_param('sssdsii', $pickup, $dropoff, $dateTime, $fare, $wheelchairValue, $rideId, $userId);
+      }
+    } else {
+      $sql = "UPDATE {$this->table}
                 SET pickup_location = ?,
                     dropoff_location = ?,
                     ride_date = ?,
-                    fare = ?" . ($hasDistanceCol ? ", distance_km = ?" : "") . "
+                    fare = ?" . ($hasDistanceCol ? ', distance_km = ?' : '') . "
                 WHERE id = ?
                 AND user_id = ?
                 AND status = 'scheduled'";
 
-            $stmt = $this->conn->prepare($sql);
-            if ($hasDistanceCol) {
-                $stmt->bind_param("sssddii", $pickup, $dropoff, $dateTime, $fare, $distance, $rideId, $userId);
-            } else {
-                $stmt->bind_param("sssdii", $pickup, $dropoff, $dateTime, $fare, $rideId, $userId);
-            }
-        }
-
-        if ($stmt->execute()) {
-            return true;
-        }
-        return false;
+      $stmt = $this->conn->prepare($sql);
+      if ($hasDistanceCol) {
+        $stmt->bind_param('sssddii', $pickup, $dropoff, $dateTime, $fare, $distance, $rideId, $userId);
+      } else {
+        $stmt->bind_param('sssdii', $pickup, $dropoff, $dateTime, $fare, $rideId, $userId);
+      }
     }
 
-    // GET ALL ACTIVE SCHEDULED RIDES FOR A USER
-    public function getActiveSchedules($userId)
-    {
-        $stmt = $this->conn->prepare("
+    if ($stmt->execute()) {
+      return true;
+    }
+    return false;
+  }
+
+  // GET ALL ACTIVE SCHEDULED RIDES FOR A USER
+  public function getActiveSchedules($userId)
+  {
+    $stmt = $this->conn->prepare("
             SELECT r.*, p.payment_method, p.status AS payment_status, p.amount AS payment_amount 
             FROM {$this->table} r
             LEFT JOIN payments p ON r.id = p.ride_id
@@ -220,18 +220,18 @@ class Schedule
             ORDER BY r.ride_date ASC
         ");
 
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $result = $stmt->get_result();
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-        return $result->fetch_all(MYSQLI_ASSOC);
-    }
+    return $result->fetch_all(MYSQLI_ASSOC);
+  }
 
-    // CANCEL A SCHEDULED RIDE
-    public function cancel($rideId, $userId)
-    {
-        // We update the status to 'cancelled' so it is kept in database history
-        $stmt = $this->conn->prepare("
+  // CANCEL A SCHEDULED RIDE
+  public function cancel($rideId, $userId)
+  {
+    // We update the status to 'cancelled' so it is kept in database history
+    $stmt = $this->conn->prepare("
             UPDATE {$this->table}
             SET status = 'cancelled'
             WHERE id = ?
@@ -239,13 +239,13 @@ class Schedule
             AND status = 'scheduled'
         ");
 
-        $stmt->bind_param("ii", $rideId, $userId);
-        
-        if ($stmt->execute() && $stmt->affected_rows > 0) {
-            return true;
-        }
+    $stmt->bind_param('ii', $rideId, $userId);
 
-        return false;
+    if ($stmt->execute() && $stmt->affected_rows > 0) {
+      return true;
     }
+
+    return false;
+  }
 }
 ?>
