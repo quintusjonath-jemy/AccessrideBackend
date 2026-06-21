@@ -38,6 +38,9 @@ try {
   $rideId = (int) $data['ride_id'];
   $db = (new Database())->connect();
 
+  // Cancel the ride request if exists
+  $db->query("UPDATE ride_requests SET user_status = 'cancelled' WHERE ride_id = " . $rideId . " AND user_status = 'pending'");
+
   $sql = 'DELETE FROM rides WHERE id = ?';
   $stmt = $db->prepare($sql);
   if (!$stmt) {
