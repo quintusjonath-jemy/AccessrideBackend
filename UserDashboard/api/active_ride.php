@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../models/RideRequest.php';
 
 try {
   if (!isset($_GET['user_id'])) {
@@ -36,6 +37,29 @@ try {
 
   $userId = (int) $_GET['user_id'];
   $db = (new Database())->connect();
+  $rideRequestModel = new RideRequest($db);
+
+  // Check for active request
+  $activeRequest = $rideRequestModel->getActiveRequest($userId);
+
+  if ($activeRequest && $activeRequest['driver_status'] === 'pending') {
+    $createdAt = strtotime($activeRequest['created_at']);
+    $now = time();
+    $elapsed = $now - $createdAt;
+
+    if ($elapsed >= 7) {
+      // Auto-accept request
+      $driverId = $activeRequest['driver_id'];
+      $requestId = $activeRequest['id'];
+      $rideId = $activeRequest['ride_id'];
+
+      // Update ride_requests
+      $rideRequestModel->acceptRequest($requestId, $driverId);
+
+      // Update rides status to 'accepted'
+      $db->query("UPDATE rides SET status = 'accepted' WHERE id = " . (int)$rideId);
+    }
+  }
 
   // Query to find the latest active, accepted or pending ride
   $sql = "
@@ -67,6 +91,20 @@ try {
   $ride = $result->fetch_assoc();
 
   if ($ride) {
+    // Re-check if the request is still pending
+    $activeRequest = $rideRequestModel->getActiveRequest($userId);
+    if ($activeRequest && $activeRequest['driver_status'] === 'pending') {
+      $ride['driver_status'] = 'pending';
+      $ride['driver_name'] = null;
+      $ride['driver_phone'] = null;
+      $ride['driver_vehicle_number'] = null;
+      $ride['driver_vehicle_type'] = null;
+      $ride['driver_lat'] = null;
+      $ride['driver_lng'] = null;
+    } else {
+      $ride['driver_status'] = 'accepted';
+    }
+
     // Ensure numeric variables are correctly typed
     $ride['id'] = (int) $ride['id'];
     $ride['driver_id'] = (int) $ride['driver_id'];

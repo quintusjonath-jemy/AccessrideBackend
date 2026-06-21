@@ -26,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../models/Ride.php';
 require_once __DIR__ . '/../models/Payment.php';
+require_once __DIR__ . '/../models/RideRequest.php';
 
 try {
   $data = json_decode(file_get_contents('php://input'), true);
@@ -58,6 +59,7 @@ try {
   $db = (new Database())->connect();
   $rideModel = new Ride($db);
   $paymentModel = new Payment($db);
+  $rideRequestModel = new RideRequest($db);
 
   $userId = (int) $data['user_id'];
   $pickup = trim($data['pickup_location']);
@@ -95,6 +97,9 @@ try {
     }
 
     $paymentModel->create($rideId, $fare, $paymentMethod, $paymentStatus, $userId, $driverId);
+
+    // Insert into ride_requests table
+    $rideRequestModel->createRequest($userId, $driverId, $rideId);
 
     echo json_encode([
       'success' => true,
