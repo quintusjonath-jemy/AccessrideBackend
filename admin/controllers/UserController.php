@@ -1,67 +1,67 @@
 <?php
 
-include_once "../config/Database.php";
-include_once "../models/User.php";
+include_once '../config/Database.php';
+include_once '../models/User.php';
 
-class UserController {
+class UserController
+{
+  private $user;
 
-    private $user;
+  public function __construct()
+  {
+    $database = new Database();
 
-    public function __construct() {
+    $db = $database->connect();
 
-        $database = new Database();
+    $this->user = new User($db);
+  }
 
-        $db = $database->connect();
+  // GET USERS
+  public function index()
+  {
+    echo json_encode(
+      $this->user->getUsers()
+    );
+  }
 
-        $this->user = new User($db);
-    }
+  // ADD USER
+  public function store($data)
+  {
+    $success = $this->user->addUser($data);
 
-    // GET USERS
-    public function index() {
+    echo json_encode([
+      'success' => $success
+    ]);
+  }
 
-        echo json_encode(
-            $this->user->getUsers()
-        );
-    }
+  // UPDATE USER
+  public function update($data)
+  {
+    $success = $this->user->updateUser($data);
 
-    // ADD USER
-    public function store($data) {
+    echo json_encode([
+      'success' => $success
+    ]);
+  }
 
-        $success = $this->user->addUser($data);
+  // DELETE USER
+  public function destroy($id)
+  {
+    $success = $this->user->deleteUser($id);
 
-        echo json_encode([
-            "success" => $success
-        ]);
-    }
+    echo json_encode([
+      'success' => $success
+    ]);
+  }
 
-    // UPDATE USER
-    public function update($data) {
-
-        $success = $this->user->updateUser($data);
-
-        echo json_encode([
-            "success" => $success
-        ]);
-    }
-
-    // DELETE USER
-    public function destroy($id) {
-
-        $success = $this->user->deleteUser($id);
-
-        echo json_encode([
-            "success" => $success
-        ]);
-    }
-
-    // HIDE USER
-    public function toggleStatus($id) {
-
-        echo json_encode([
-            "success" =>
-            $this->user->toggleUserStatus($id)
-        ]);
-    }
+  // HIDE USER
+  public function toggleStatus($id)
+  {
+    echo json_encode([
+      'success' =>
+        $this->user->toggleUserStatus($id)
+    ]);
+  }
 }
 
 ?>

@@ -1,29 +1,29 @@
 <?php
 
-class Database {
+class Database
+{
+  private $host = 'localhost';
+  private $user = 'root';
+  private $password = '';
+  private $database = 'accessride';
 
-    private $host = "localhost";
-    private $user = "root";
-    private $password = "";
-    private $database = "accessride";
+  public $conn;
 
-    public $conn;
+  public function connect()
+  {
+    $this->conn = new mysqli(
+      $this->host,
+      $this->user,
+      $this->password,
+      $this->database
+    );
 
-    public function connect() {
-
-        $this->conn = new mysqli(
-            $this->host,
-            $this->user,
-            $this->password,
-            $this->database
-        );
-
-        if($this->conn->connect_error) {
-            die("Connection Failed: " . $this->conn->connect_error);
-        }
-
-        return $this->conn;
+    if ($this->conn->connect_error) {
+      die('Connection Failed: ' . $this->conn->connect_error);
     }
+
+    return $this->conn;
+  }
 }
 
 ?>

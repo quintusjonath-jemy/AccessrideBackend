@@ -1,9 +1,9 @@
 <?php
 
-header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
 
-include_once "../config/Database.php";
+include_once '../config/Database.php';
 
 $database = new Database();
 
@@ -11,12 +11,10 @@ $conn = $database->connect();
 
 $filter = $_GET['filter'] ?? 'week';
 
-
 /* USERS QUERY */
 
-if($filter === "day") {
-
-    $userSql = "
+if ($filter === 'day') {
+  $userSql = '
         SELECT
             HOUR(created_at) as label,
             COUNT(*) as total_users
@@ -24,9 +22,9 @@ if($filter === "day") {
         WHERE DATE(created_at)=CURDATE()
         GROUP BY HOUR(created_at)
         ORDER BY label ASC
-    ";
+    ';
 
-    $driverSql = "
+  $driverSql = '
         SELECT
             HOUR(created_at) as label,
             COUNT(*) as total_drivers
@@ -34,13 +32,9 @@ if($filter === "day") {
         WHERE DATE(created_at)=CURDATE()
         GROUP BY HOUR(created_at)
         ORDER BY label ASC
-    ";
-
-}
-
-elseif($filter === "month") {
-
-    $userSql = "
+    ';
+} elseif ($filter === 'month') {
+  $userSql = '
         SELECT
             DATE(created_at) as label,
             COUNT(*) as total_users
@@ -48,9 +42,9 @@ elseif($filter === "month") {
         WHERE MONTH(created_at)=MONTH(CURDATE())
         GROUP BY DATE(created_at)
         ORDER BY label ASC
-    ";
+    ';
 
-    $driverSql = "
+  $driverSql = '
         SELECT
             DATE(created_at) as label,
             COUNT(*) as total_drivers
@@ -58,13 +52,9 @@ elseif($filter === "month") {
         WHERE MONTH(created_at)=MONTH(CURDATE())
         GROUP BY DATE(created_at)
         ORDER BY label ASC
-    ";
-
-}
-
-else {
-
-    $userSql = "
+    ';
+} else {
+  $userSql = '
         SELECT
             DATE(created_at) as label,
             COUNT(*) as total_users
@@ -72,9 +62,9 @@ else {
         WHERE YEARWEEK(created_at, 1)=YEARWEEK(CURDATE(), 1)
         GROUP BY DATE(created_at)
         ORDER BY label ASC
-    ";
+    ';
 
-    $driverSql = "
+  $driverSql = '
         SELECT
             DATE(created_at) as label,
             COUNT(*) as total_drivers
@@ -82,9 +72,8 @@ else {
         WHERE YEARWEEK(created_at, 1)=YEARWEEK(CURDATE(), 1)
         GROUP BY DATE(created_at)
         ORDER BY label ASC
-    ";
+    ';
 }
-
 
 /* USERS */
 
@@ -92,11 +81,9 @@ $userResult = $conn->query($userSql);
 
 $users = [];
 
-while($row = $userResult->fetch_assoc()) {
-
-    $users[] = $row;
+while ($row = $userResult->fetch_assoc()) {
+  $users[] = $row;
 }
-
 
 /* DRIVERS */
 
@@ -104,15 +91,13 @@ $driverResult = $conn->query($driverSql);
 
 $drivers = [];
 
-while($row = $driverResult->fetch_assoc()) {
-
-    $drivers[] = $row;
+while ($row = $driverResult->fetch_assoc()) {
+  $drivers[] = $row;
 }
 
-
 echo json_encode([
-    "users" => $users,
-    "drivers" => $drivers
+  'users' => $users,
+  'drivers' => $drivers
 ]);
 
 ?>
