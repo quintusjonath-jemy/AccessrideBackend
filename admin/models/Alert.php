@@ -13,11 +13,18 @@ class Alert {
     public function getAlerts() {
 
         $sql = "
-            SELECT alerts.*, TRIM(CONCAT(COALESCE(users.first_name, ''), ' ', COALESCE(users.last_name, ''))) as user_name
+            SELECT 
+                alerts.*, 
+                TRIM(CONCAT(COALESCE(users.first_name, ''), ' ', COALESCE(users.last_name, ''))) as user_name,
+                users.phone as user_phone,
+                users.location as user_location,
+                drivers.phone as driver_phone,
+                TRIM(CONCAT(COALESCE(drivers.first_name, ''), ' ', COALESCE(drivers.last_name, ''))) as driver_name,
+                (SELECT contact_name FROM emergency_contacts WHERE user_id = alerts.user_id LIMIT 1) AS emergency_contact_name,
+                (SELECT phone_number FROM emergency_contacts WHERE user_id = alerts.user_id LIMIT 1) AS emergency_contact_phone
             FROM alerts
-            LEFT JOIN users
-            ON alerts.user_id = users.id
-
+            LEFT JOIN users ON alerts.user_id = users.id
+            LEFT JOIN drivers ON alerts.driver_id = drivers.id
             ORDER BY alerts.created_at DESC
         ";
 
