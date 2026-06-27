@@ -81,7 +81,7 @@ class Driver
                 )
                 VALUES
                 (
-                    ?, ?, ?, ?, ?, 1
+                    ?, ?, ?, ?, ?
                 )"
             );
 
@@ -89,7 +89,8 @@ class Driver
                 $data['firstName'],
                 $data['lastName'],
                 $data['phone'],
-                $passwordHash
+                $passwordHash,
+                1
             ]);
 
             $userId = $pdo->lastInsertId();
