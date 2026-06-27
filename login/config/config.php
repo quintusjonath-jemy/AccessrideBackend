@@ -18,13 +18,6 @@ header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
 // Read from environment or replace with literal values for testing
-if (!defined('GOOGLE_CLIENT_ID')) {
-    define('GOOGLE_CLIENT_ID', getenv('GOOGLE_CLIENT_ID') ?: 'YOUR_GOOGLE_CLIENT_ID');
-}
-
-if (!defined('GOOGLE_CLIENT_SECRET')) {
-    define('GOOGLE_CLIENT_SECRET', getenv('GOOGLE_CLIENT_SECRET') ?: 'YOUR_GOOGLE_CLIENT_SECRET');
-}
 
 if (!defined('BACKEND_BASE')) {
     define('BACKEND_BASE', getenv('BACKEND_BASE') ?: 'http://localhost');
@@ -32,10 +25,6 @@ if (!defined('BACKEND_BASE')) {
 
 if (!defined('FRONTEND_BASE')) {
     define('FRONTEND_BASE', getenv('FRONTEND_BASE') ?: 'http://localhost:5173/');
-}
-
-if (!defined('REDIRECT_URI')) {
-    define('REDIRECT_URI', BACKEND_BASE . '/login/api/oauth_callback.php');
 }
 
 if (!defined('DB_HOST')) {
