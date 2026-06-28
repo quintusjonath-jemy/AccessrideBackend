@@ -32,6 +32,27 @@ class Driver
         if (empty($file['name'])) {
             return null;
         }
+        if ($file['size'] > 5 * 1024 * 1024) {
+
+            throw new Exception("File size exceeds 5MB.");
+        }
+
+        $allowed = [
+
+            "image/jpeg",
+            "image/png",
+            "image/jpg"
+
+        ];
+
+        $mime = mime_content_type($file['tmp_name']);
+
+        if (!in_array($mime, $allowed)) {
+
+            throw new Exception("Invalid image.");
+        }
+
+
 
         $targetDir = __DIR__ . "/../uploads/" . $folder . "/";
 
@@ -59,6 +80,19 @@ class Driver
             $pdo = self::getConnection();
 
             $pdo->beginTransaction();
+
+            // Check if phone number already exists
+            $stmt = $pdo->prepare("
+            SELECT id
+            FROM users
+            WHERE phone = ?
+        ");
+
+            $stmt->execute([$data['phone']]);
+
+            if ($stmt->fetch()) {
+                throw new Exception("Phone number already registered.");
+            }
 
             $passwordHash =
                 password_hash(
@@ -342,12 +376,21 @@ class Driver
             $pdo = self::getConnection();
 
             $stmt = $pdo->prepare("
-            SELECT *
+            SELECT
+               users.id,
+               users.first_name,
+               users.last_name,
+               users.phone,
+               users.password_hash,
+               drivers.id AS driver_id,
+               drivers.status
             FROM users
-            WHERE phone = ?
-            AND is_driver = 1
+            INNER JOIN drivers
+            ON users.id = drivers.user_id
+            WHERE users.phone = ?
+            AND users.is_driver = 1
             LIMIT 1
-        ");
+            ");
 
             $stmt->execute([$phone]);
 
@@ -360,7 +403,7 @@ class Driver
             if (!password_verify($password, $user['password_hash'])) {
                 return false;
             }
-
+            unset($user['password_hash']);
             return $user;
         } catch (Exception $e) {
             error_log($e->getMessage());
