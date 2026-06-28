@@ -17,13 +17,21 @@ class Ride {
 
                 rides.*,
 
-                users.name AS user_name,
+                TRIM(CONCAT(COALESCE(users.first_name, ''), ' ', COALESCE(users.last_name, ''))) AS user_name,
 
-                drivers.name AS driver_name,
+                TRIM(CONCAT(COALESCE(drivers.first_name, ''), ' ', COALESCE(drivers.last_name, ''))) AS driver_name,
 
                 drivers.latitude,
 
-                drivers.longitude
+                drivers.longitude,
+
+                drivers.current_location AS driver_current_location,
+
+                vehicles.vehicle_type AS vehicle_type,
+
+                drivers.status AS driver_status,
+
+                payments.status AS payment_status
 
             FROM rides
 
@@ -32,6 +40,12 @@ class Ride {
 
             LEFT JOIN drivers
             ON rides.driver_id = drivers.id
+
+            LEFT JOIN vehicles
+            ON drivers.id = vehicles.driver_id
+
+            LEFT JOIN payments
+            ON rides.id = payments.ride_id
         ";
 
         $result = $this->conn->query($sql);

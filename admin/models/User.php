@@ -11,8 +11,7 @@ class User {
 
     // GET USERS
     public function getUsers() {
-
-        $sql = "SELECT * FROM " . $this->table;
+        $sql = "SELECT id, TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))) AS name, email, status, location, created_at, phone, profile_image FROM " . $this->table;
 
         $result = $this->conn->query($sql);
 
@@ -27,16 +26,20 @@ class User {
 
     // ADD USER
     public function addUser($data) {
-
         $sql = "INSERT INTO users
-                (name, email, status, location)
-                VALUES (?, ?, ?, ?)";
+                (first_name, last_name, email, status, location)
+                VALUES (?, ?, ?, ?, ?)";
+
+        $parts = explode(' ', trim($data['name']), 2);
+        $first_name = $parts[0];
+        $last_name = isset($parts[1]) ? $parts[1] : '';
 
         $stmt = $this->conn->prepare($sql);
 
         $stmt->bind_param(
-            "ssss",
-            $data['name'],
+            "sssss",
+            $first_name,
+            $last_name,
             $data['email'],
             $data['status'],
             $data['location']
@@ -47,16 +50,20 @@ class User {
 
     // UPDATE USER
     public function updateUser($data) {
-
         $sql = "UPDATE users
-                SET name=?, email=?, status=?, location=?
+                SET first_name=?, last_name=?, email=?, status=?, location=?
                 WHERE id=?";
+
+        $parts = explode(' ', trim($data['name']), 2);
+        $first_name = $parts[0];
+        $last_name = isset($parts[1]) ? $parts[1] : '';
 
         $stmt = $this->conn->prepare($sql);
 
         $stmt->bind_param(
-            "ssssi",
-            $data['name'],
+            "sssssi",
+            $first_name,
+            $last_name,
             $data['email'],
             $data['status'],
             $data['location'],

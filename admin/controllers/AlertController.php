@@ -1,48 +1,48 @@
 <?php
 
-include_once "../config/Database.php";
-include_once "../models/Alert.php";
+include_once '../config/Database.php';
+include_once '../models/Alert.php';
 
-class AlertController {
+class AlertController
+{
+  private $alert;
 
-    private $alert;
+  public function __construct()
+  {
+    $database = new Database();
 
-    public function __construct() {
+    $db = $database->connect();
 
-        $database = new Database();
+    $this->alert = new Alert($db);
+  }
 
-        $db = $database->connect();
+  // GET ALERTS
+  public function index()
+  {
+    echo json_encode(
+      $this->alert->getAlerts()
+    );
+  }
 
-        $this->alert = new Alert($db);
-    }
+  // ADD ALERT
+  public function store($data)
+  {
+    $success = $this->alert->addAlert($data);
 
-    // GET ALERTS
-    public function index() {
+    echo json_encode([
+      'success' => $success
+    ]);
+  }
 
-        echo json_encode(
-            $this->alert->getAlerts()
-        );
-    }
+  // RESOLVE ALERT
+  public function resolve($id)
+  {
+    $success = $this->alert->resolveAlert($id);
 
-    // ADD ALERT
-    public function store($data) {
-
-        $success = $this->alert->addAlert($data);
-
-        echo json_encode([
-            "success" => $success
-        ]);
-    }
-
-    // RESOLVE ALERT
-    public function resolve($id) {
-
-        $success = $this->alert->resolveAlert($id);
-
-        echo json_encode([
-            "success" => $success
-        ]);
-    }
+    echo json_encode([
+      'success' => $success
+    ]);
+  }
 }
 
 ?>

@@ -1,14 +1,14 @@
-//backend
-git add .
-git commit -m "connect frontend to backend"
-
-git checkout main                          
-git pull origin main
-git merge kabil
-git push origin main
-
-//frontend
 git pull origin main
 git add .
 git commit -m "connect frontend to backend"
 git push origin Kabil
+
+
+
+
+# update your branch
+git checkout Kabil
+git merge main
+git push origin Kabil
+
+
