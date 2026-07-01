@@ -7,6 +7,8 @@ header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
 include_once '../config/Database.php';
+include_once '../config/SMTPMailer.php';
+
 $database = new Database();
 $conn = $database->connect();
 
@@ -25,6 +27,10 @@ if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     echo json_encode(['success' => false, 'message' => 'Invalid email address']);
     exit;
 }
+
+// Retrieve SMTP settings from DB (admin_id = 1)
+$smtpQuery = $conn->query("SELECT smtp_host, smtp_port, smtp_user, smtp_pass, smtp_secure FROM settings WHERE admin_id = 1 LIMIT 1");
+$smtpSettings = $smtpQuery ? $smtpQuery->fetch_assoc() : null;
 
 // ── 1. Gather all statistics for the report ───────────────────────────────────
 $where = "YEAR(created_at) = $year AND MONTH(created_at) = $month";
@@ -74,8 +80,7 @@ $lkr = function($v) {
 $subject = "AccessRide Operational Report — $monthName $year";
 $headers = "MIME-Version: 1.0\r\n";
 $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-$headers .= "From: AccessRide System <noreply@accessride.com>\r\n";
-$headers .= "Reply-To: noreply@accessride.com\r\n";
+$headers .= "From: AccessRide System <" . ($smtpSettings['smtp_user'] ?? 'noreply@accessride.com') . ">\r\n";
 
 $body = "
 <!DOCTYPE html>
@@ -102,7 +107,6 @@ $body = "
         .table tr:last-child td { border-bottom: 0; }
         .highlight { font-weight: bold; color: #0B2F89; background-color: #eff6ff; }
         .footer { background-color: #0B2F89; color: #ffffff; padding: 15px; text-align: center; font-size: 11px; opacity: 0.9; }
-        .footer a { color: #FEC329; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -122,15 +126,15 @@ $body = "
                         <div class='stat-lbl' style='color: #2563eb;'>New Users</div>
                         <div class='stat-val' style='color: #2563eb;'>$newUsers</div>
                     </div>
-                    <div class='stat-card' style='background: #fffbeb; border-color: #fef3c7; margin-left: 10px;'>
+                    <div class='stat-card' style='background: #fffbeb; border-color: #fef3c7;'>
                         <div class='stat-lbl' style='color: #d97706;'>New Drivers</div>
                         <div class='stat-val' style='color: #d97706;'>$newDrivers</div>
                     </div>
-                    <div class='stat-card' style='background: #faf5ff; border-color: #e9d5ff; margin-left: 10px;'>
+                    <div class='stat-card' style='background: #faf5ff; border-color: #e9d5ff;'>
                         <div class='stat-lbl' style='color: #7c3aed;'>Total Rides</div>
                         <div class='stat-val' style='color: #7c3aed;'>$totalRides</div>
                     </div>
-                    <div class='stat-card' style='background: #ecfdf5; border-color: #a7f3d0; margin-left: 10px;'>
+                    <div class='stat-card' style='background: #ecfdf5; border-color: #a7f3d0;'>
                         <div class='stat-lbl' style='color: #059669;'>Revenue</div>
                         <div class='stat-val' style='color: #059669; font-size: 13px;'>" . $lkr($totalRevenue) . "</div>
                     </div>
@@ -205,14 +209,33 @@ $body = "
 </html>
 ";
 
-// ── 3. Send email ─────────────────────────────────────────────────────────────
-$mailSent = @mail($email, $subject, $body, $headers);
+// ── 3. Send Email using SMTP if configured, else fallback to standard mail() ──
+$mailSent   = false;
+$methodUsed = 'PHP mail()';
+$logs       = [];
+
+if ($smtpSettings && !empty($smtpSettings['smtp_user']) && !empty($smtpSettings['smtp_pass'])) {
+    $mailer = new SMTPMailer(
+        $smtpSettings['smtp_host'],
+        intval($smtpSettings['smtp_port']),
+        $smtpSettings['smtp_user'],
+        $smtpSettings['smtp_pass'],
+        $smtpSettings['smtp_secure']
+    );
+    $mailSent   = $mailer->send($email, $subject, $body, $headers);
+    $logs       = $mailer->errorLog;
+    $methodUsed = 'SMTP (' . $smtpSettings['smtp_host'] . ')';
+} else {
+    $mailSent = @mail($email, $subject, $body, $headers);
+    $logs[]   = "No SMTP configurations found. Fallback to PHP mail() returned " . ($mailSent ? "TRUE" : "FALSE");
+}
 
 echo json_encode([
-    'success' => true,
+    'success'   => true,
     'mail_sent' => $mailSent,
-    'message' => $mailSent 
-        ? "Report successfully emailed to $email" 
-        : "Report HTML prepared, but mail sending failed (SMTP not configured on this host).",
+    'message'   => $mailSent 
+        ? "Report successfully emailed to $email using $methodUsed." 
+        : "Failed to dispatch email. (Make sure your System Settings SMTP configurations are valid.)",
+    'debug'     => $logs
 ]);
 ?>
