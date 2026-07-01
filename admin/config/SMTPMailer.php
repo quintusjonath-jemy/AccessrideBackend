@@ -22,12 +22,21 @@ class SMTPMailer
     public function send($to, $subject, $body, $headers = '')
     {
         $this->errorLog = [];
+        
+        // Auto-detect ssl/tls based on port to resolve UI setting mismatches
+        $sec = $this->secure;
+        if (intval($this->port) === 587) {
+            $sec = 'tls';
+        } elseif (intval($this->port) === 465) {
+            $sec = 'ssl';
+        }
+
         $server = $this->host;
-        if ($this->secure === 'ssl') {
+        if ($sec === 'ssl') {
             $server = 'ssl://' . $this->host;
         }
 
-        $this->errorLog[] = "Connecting to $server on port $this->port...";
+        $this->errorLog[] = "Connecting to $server on port $this->port (Security: $sec)...";
         $socket = @fsockopen($server, $this->port, $errno, $errstr, 15);
         if (!$socket) {
             $this->errorLog[] = "Connection failed: $errstr ($errno)";
@@ -46,7 +55,7 @@ class SMTPMailer
             return false;
         }
 
-        if ($this->secure === 'tls') {
+        if ($sec === 'tls') {
             if (!$this->writeCommand($socket, "STARTTLS", '220')) {
                 $this->errorLog[] = "STARTTLS negotiation failed.";
                 fclose($socket);
