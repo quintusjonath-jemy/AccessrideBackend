@@ -12,6 +12,18 @@ class Settings
 
   private function ensureSettingsExist($admin_id)
   {
+    // Dynamically alter settings table to add SMTP fields if missing
+    $check_smtp = $this->conn->query("SHOW COLUMNS FROM " . $this->table . " LIKE 'smtp_host'");
+    if ($check_smtp && $check_smtp->num_rows === 0) {
+        $this->conn->query("ALTER TABLE " . $this->table . " 
+            ADD COLUMN smtp_host VARCHAR(255) DEFAULT 'smtp.gmail.com',
+            ADD COLUMN smtp_port INT DEFAULT 465,
+            ADD COLUMN smtp_user VARCHAR(255) DEFAULT '',
+            ADD COLUMN smtp_pass VARCHAR(255) DEFAULT '',
+            ADD COLUMN smtp_secure VARCHAR(50) DEFAULT 'ssl'
+        ");
+    }
+
     $sql = 'SELECT id FROM ' . $this->table . ' WHERE admin_id = ?';
     $stmt = $this->conn->prepare($sql);
     $stmt->bind_param('i', $admin_id);
@@ -115,7 +127,12 @@ class Settings
                 theme,
                 refresh_rate,
                 sos_enabled,
-                tracking_enabled
+                tracking_enabled,
+                smtp_host,
+                smtp_port,
+                smtp_user,
+                smtp_pass,
+                smtp_secure
             FROM ' . $this->table . '
             WHERE admin_id=?
         ');
@@ -123,9 +140,10 @@ class Settings
     $stmt->execute();
     $res = $stmt->get_result()->fetch_assoc();
     if ($res) {
-      $res['refresh_rate'] = (int) $res['refresh_rate'];
-      $res['sos_enabled'] = (int) $res['sos_enabled'];
+      $res['refresh_rate']     = (int) $res['refresh_rate'];
+      $res['sos_enabled']      = (int) $res['sos_enabled'];
       $res['tracking_enabled'] = (int) $res['tracking_enabled'];
+      $res['smtp_port']        = (int) $res['smtp_port'];
     }
     return $res;
   }
@@ -140,15 +158,32 @@ class Settings
                 theme=?,
                 refresh_rate=?,
                 sos_enabled=?,
-                tracking_enabled=?
+                tracking_enabled=?,
+                smtp_host=?,
+                smtp_port=?,
+                smtp_user=?,
+                smtp_pass=?,
+                smtp_secure=?
             WHERE admin_id=?
         ');
+    
+    $smtp_host   = trim($data['smtp_host']   ?? 'smtp.gmail.com');
+    $smtp_port   = intval($data['smtp_port']   ?? 465);
+    $smtp_user   = trim($data['smtp_user']   ?? '');
+    $smtp_pass   = $data['smtp_pass']   ?? '';
+    $smtp_secure = trim($data['smtp_secure'] ?? 'ssl');
+
     $stmt->bind_param(
-      'siiii',
+      'siiisssssi',
       $data['theme'],
       $data['refresh_rate'],
       $data['sos_enabled'],
       $data['tracking_enabled'],
+      $smtp_host,
+      $smtp_port,
+      $smtp_user,
+      $smtp_pass,
+      $smtp_secure,
       $admin_id
     );
     return $stmt->execute();
