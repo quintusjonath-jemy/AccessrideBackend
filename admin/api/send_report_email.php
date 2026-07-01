@@ -8,6 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
 include_once '../config/Database.php';
 include_once '../config/SMTPMailer.php';
+include_once '../config/Encryption.php';
 
 $database = new Database();
 $conn = $database->connect();
@@ -215,11 +216,12 @@ $methodUsed = 'PHP mail()';
 $logs       = [];
 
 if ($smtpSettings && !empty($smtpSettings['smtp_user']) && !empty($smtpSettings['smtp_pass'])) {
+    $decryptedPass = Encryption::decrypt($smtpSettings['smtp_pass']);
     $mailer = new SMTPMailer(
         $smtpSettings['smtp_host'],
         intval($smtpSettings['smtp_port']),
         $smtpSettings['smtp_user'],
-        $smtpSettings['smtp_pass'],
+        $decryptedPass,
         $smtpSettings['smtp_secure']
     );
     $mailSent   = $mailer->send($email, $subject, $body, $headers);
