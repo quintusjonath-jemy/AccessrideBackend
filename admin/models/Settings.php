@@ -1,4 +1,5 @@
 <?php
+include_once __DIR__ . '/../config/Encryption.php';
 
 class Settings
 {
@@ -144,6 +145,11 @@ class Settings
       $res['sos_enabled']      = (int) $res['sos_enabled'];
       $res['tracking_enabled'] = (int) $res['tracking_enabled'];
       $res['smtp_port']        = (int) $res['smtp_port'];
+      
+      // Mask password so it is never exposed in plain text in the browser
+      if (!empty($res['smtp_pass'])) {
+          $res['smtp_pass'] = '••••••••';
+      }
     }
     return $res;
   }
@@ -152,6 +158,22 @@ class Settings
   public function updateSystemSettings($admin_id, $data)
   {
     $this->ensureSettingsExist($admin_id);
+
+    // Fetch existing encrypted password to avoid overwriting with mask
+    $existing_pass = "";
+    $query = $this->conn->query("SELECT smtp_pass FROM " . $this->table . " WHERE admin_id = $admin_id LIMIT 1");
+    if ($query) {
+        $row = $query->fetch_assoc();
+        $existing_pass = $row['smtp_pass'] ?? "";
+    }
+
+    $smtp_pass = $data['smtp_pass'] ?? '';
+    if ($smtp_pass === '••••••••' || empty($smtp_pass)) {
+        $smtp_pass_db = $existing_pass;
+    } else {
+        $smtp_pass_db = Encryption::encrypt($smtp_pass);
+    }
+
     $stmt = $this->conn->prepare('
             UPDATE ' . $this->table . '
             SET
@@ -170,7 +192,6 @@ class Settings
     $smtp_host   = trim($data['smtp_host']   ?? 'smtp.gmail.com');
     $smtp_port   = intval($data['smtp_port']   ?? 465);
     $smtp_user   = trim($data['smtp_user']   ?? '');
-    $smtp_pass   = $data['smtp_pass']   ?? '';
     $smtp_secure = trim($data['smtp_secure'] ?? 'ssl');
 
     $stmt->bind_param(
@@ -182,7 +203,7 @@ class Settings
       $smtp_host,
       $smtp_port,
       $smtp_user,
-      $smtp_pass,
+      $smtp_pass_db,
       $smtp_secure,
       $admin_id
     );
