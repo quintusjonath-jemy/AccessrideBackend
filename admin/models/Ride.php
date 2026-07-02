@@ -46,6 +46,7 @@ class Ride {
 
             LEFT JOIN payments
             ON rides.id = payments.ride_id
+            ORDER BY rides.id DESC
         ";
 
         $result = $this->conn->query($sql);
