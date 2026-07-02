@@ -53,7 +53,7 @@ class Subscription
   // ADD SUBSCRIPTION
   public function addSubscription($data)
   {
-    $sql = 'INSERT INTO ' . $this->table . ' (driver_id, status, expires_at, last_payment_date, amount) VALUES (?, ?, ?, ?, ?)';
+    $sql = 'INSERT INTO ' . $this->table . ' (driver_id, status, expires_at, last_payment_date, amount, warning_sent) VALUES (?, ?, ?, ?, ?, 0)';
 
     $status = isset($data['status']) ? $data['status'] : 'none';
     $expires = !empty($data['expires_at']) ? $data['expires_at'] : null;
@@ -90,7 +90,7 @@ class Subscription
 
     if ($check_res->num_rows > 0) {
       // Update
-      $sql = 'UPDATE ' . $this->table . ' SET status = ?, expires_at = ?, last_payment_date = ?, amount = ? WHERE driver_id = ?';
+      $sql = 'UPDATE ' . $this->table . ' SET status = ?, expires_at = ?, last_payment_date = ?, amount = ?, warning_sent = 0 WHERE driver_id = ?';
       $stmt = $this->conn->prepare($sql);
       $stmt->bind_param(
         'sssdi',
@@ -102,7 +102,7 @@ class Subscription
       );
     } else {
       // Insert
-      $sql = 'INSERT INTO ' . $this->table . ' (driver_id, status, expires_at, last_payment_date, amount) VALUES (?, ?, ?, ?, ?)';
+      $sql = 'INSERT INTO ' . $this->table . ' (driver_id, status, expires_at, last_payment_date, amount, warning_sent) VALUES (?, ?, ?, ?, ?, 0)';
       $stmt = $this->conn->prepare($sql);
       $stmt->bind_param(
         'isssd',

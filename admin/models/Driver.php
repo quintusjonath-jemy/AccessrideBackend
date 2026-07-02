@@ -150,7 +150,7 @@ class Driver
       $last_pay = !empty($data['last_payment_date']) ? $data['last_payment_date'] : null;
       $sub_amount = isset($data['subscription_amount']) ? (float) $data['subscription_amount'] : 29.99;
 
-      $sub_stmt = $this->conn->prepare('INSERT INTO subscriptions (driver_id, status, expires_at, last_payment_date, amount) VALUES (?, ?, ?, ?, ?)');
+      $sub_stmt = $this->conn->prepare('INSERT INTO subscriptions (driver_id, status, expires_at, last_payment_date, amount, warning_sent) VALUES (?, ?, ?, ?, ?, 0)');
       $sub_stmt->bind_param(
         'isssd',
         $driver_id,
@@ -252,9 +252,9 @@ class Driver
       $sub_amount = isset($data['subscription_amount']) ? (float) $data['subscription_amount'] : 29.99;
 
       $sub_stmt = $this->conn->prepare('
-                INSERT INTO subscriptions (driver_id, status, expires_at, last_payment_date, amount)
-                VALUES (?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE status=?, expires_at=?, last_payment_date=?, amount=?
+                INSERT INTO subscriptions (driver_id, status, expires_at, last_payment_date, amount, warning_sent)
+                VALUES (?, ?, ?, ?, ?, 0)
+                ON DUPLICATE KEY UPDATE status=?, expires_at=?, last_payment_date=?, amount=?, warning_sent=0
             ');
       $sub_stmt->bind_param(
         'isssdsssd',
