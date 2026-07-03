@@ -24,6 +24,14 @@ class UserController
     );
   }
 
+  // SHOW USER
+  public function show($id)
+  {
+    echo json_encode(
+      $this->user->getUserById($id)
+    );
+  }
+
   // ADD USER
   public function store($data)
   {

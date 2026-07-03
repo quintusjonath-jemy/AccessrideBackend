@@ -87,7 +87,9 @@ class Driver
                 s.status AS subscription_status, 
                 s.expires_at AS subscription_expires_at, 
                 s.last_payment_date, 
-                s.amount AS subscription_amount 
+                s.amount AS subscription_amount,
+                (SELECT COUNT(*) FROM rides r WHERE r.driver_id = d.id AND r.status = 'completed') AS completed_rides_count,
+                (SELECT COALESCE(SUM(r.fare), 0) FROM rides r WHERE r.driver_id = d.id AND r.status = 'completed') AS gross_earnings
             FROM drivers d 
             LEFT JOIN vehicles v ON d.id = v.driver_id 
             LEFT JOIN subscriptions s ON d.id = s.driver_id 
@@ -96,7 +98,12 @@ class Driver
     $stmt->bind_param('i', $id);
     $stmt->execute();
 
-    return $stmt->get_result()->fetch_assoc();
+    $result = $stmt->get_result()->fetch_assoc();
+    if ($result) {
+        $result['completed_rides_count'] = (int) $result['completed_rides_count'];
+        $result['gross_earnings'] = (float) $result['gross_earnings'];
+    }
+    return $result;
   }
 
   // ADD DRIVER

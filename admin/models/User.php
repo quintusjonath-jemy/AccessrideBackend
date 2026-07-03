@@ -115,6 +115,36 @@ class User {
 
         return $stmt->execute();
     }
+
+    public function getUserById($id) {
+        $stmt = $this->conn->prepare("
+            SELECT 
+                u.id, 
+                u.first_name, 
+                u.last_name, 
+                TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) AS name,
+                u.email, 
+                u.phone, 
+                u.status, 
+                u.location, 
+                u.created_at,
+                (SELECT contact_name FROM emergency_contacts ec WHERE ec.user_id = u.id ORDER BY ec.id DESC LIMIT 1) AS contact_name,
+                (SELECT phone_number FROM emergency_contacts ec WHERE ec.user_id = u.id ORDER BY ec.id DESC LIMIT 1) AS contact_phone,
+                (SELECT COUNT(*) FROM rides r WHERE r.user_id = u.id AND r.status = 'completed') AS completed_rides_count,
+                (SELECT COALESCE(SUM(r.fare), 0) FROM rides r WHERE r.user_id = u.id AND r.status = 'completed') AS total_amount_paid
+            FROM users u
+            WHERE u.id=?
+        ");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+
+        if ($result) {
+            $result['completed_rides_count'] = (int) $result['completed_rides_count'];
+            $result['total_amount_paid'] = (float) $result['total_amount_paid'];
+        }
+        return $result;
+    }
 }
 
 ?>
