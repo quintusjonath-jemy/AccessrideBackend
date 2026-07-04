@@ -79,31 +79,28 @@ class DriverController
         }
 
         // Save Driver
+        try {
+            $result = Driver::register($_POST, $_FILES);
 
-        $result =
-            Driver::register(
-                $_POST,
-                $_FILES
-            );
+            if (!$result) {
+                http_response_code(500);
+                echo json_encode([
+                    "error" => "Driver registration failed"
+                ]);
+                return;
+            }
 
-        if (!$result) {
-
-            http_response_code(500);
-
+            http_response_code(201);
             echo json_encode([
-                "error" => "Driver registration failed"
+                "success" => true,
+                "message" => "Driver registration submitted successfully. Waiting for admin approval."
             ]);
-
-            return;
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode([
+                "error" => $e->getMessage()
+            ]);
         }
-
-        http_response_code(201);
-
-        echo json_encode([
-            "success" => true,
-            "message" =>
-            "Driver registration submitted successfully. Waiting for admin approval."
-        ]);
     }
 
     //DRIVER LOGIN

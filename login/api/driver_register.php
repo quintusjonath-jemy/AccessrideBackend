@@ -16,20 +16,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$result = Driver::register($_POST, $_FILES);
+try {
+    $result = Driver::register($_POST, $_FILES);
 
-if ($result) {
-
+    if ($result) {
+        echo json_encode([
+            "success" => true,
+            "message" => "Driver registration submitted successfully"
+        ]);
+    } else {
+        http_response_code(500);
+        echo json_encode([
+            "error" => "Driver registration failed"
+        ]);
+    }
+} catch (Exception $e) {
+    http_response_code(400);
     echo json_encode([
-        "success" => true,
-        "message" => "Driver registration submitted successfully"
-    ]);
-
-} else {
-
-    http_response_code(500);
-
-    echo json_encode([
-        "error" => "Driver registration failed"
+        "error" => $e->getMessage()
     ]);
 }
