@@ -25,6 +25,7 @@ ob_implicit_flush(true);
 include_once '../config/Database.php';
 include_once '../models/Alert.php';
 include_once '../models/Ride.php';
+include_once '../models/User.php';
 
 $database = new Database();
 $db = $database->connect();
@@ -36,11 +37,14 @@ if (!$db) {
 
 $alertModel = new Alert($db);
 $rideModel = new Ride($db);
+$userModel = new User($db);
 
 $type = isset($_GET['type']) ? $_GET['type'] : 'all';
 
 $lastAlertHash = '';
 $lastRideHash = '';
+$lastUserHash = '';
+$lastStatsHash = '';
 
 // Run infinite loop for SSE stream
 while (true) {
@@ -76,6 +80,46 @@ while (true) {
       }
       echo 'data: ' . $ridesJson . "\n\n";
       $lastRideHash = $ridesHash;
+    }
+  }
+
+  // Stream Users
+  if ($type === 'all') {
+    $users = $userModel->getUsers();
+    $usersJson = json_encode($users);
+    $usersHash = md5($usersJson);
+
+    if ($usersHash !== $lastUserHash) {
+      echo "event: users\n";
+      echo 'data: ' . $usersJson . "\n\n";
+      $lastUserHash = $usersHash;
+    }
+  }
+
+  // Stream Stats
+  if ($type === 'all') {
+    $driversQuery = $db->query("SELECT COUNT(*) as total FROM drivers");
+    $totalDrivers = $driversQuery ? intval($driversQuery->fetch_assoc()['total']) : 0;
+
+    $ridesQuery = $db->query("SELECT COUNT(*) as total FROM rides");
+    $totalRides = $ridesQuery ? intval($ridesQuery->fetch_assoc()['total']) : 0;
+
+    $activeQuery = $db->query("SELECT COUNT(*) as total FROM rides WHERE status = 'active'");
+    $activeRides = $activeQuery ? intval($activeQuery->fetch_assoc()['total']) : 0;
+
+    $stats = [
+      'totalDrivers' => $totalDrivers,
+      'totalRides' => $totalRides,
+      'activeRides' => $activeRides
+    ];
+
+    $statsJson = json_encode($stats);
+    $statsHash = md5($statsJson);
+
+    if ($statsHash !== $lastStatsHash) {
+      echo "event: stats\n";
+      echo 'data: ' . $statsJson . "\n\n";
+      $lastStatsHash = $statsHash;
     }
   }
 
