@@ -2,8 +2,10 @@
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../models/User.php';
 
-class UserController {
-    public function getCurrentUser(): void {
+class UserController
+{
+    public function getCurrentUser(): void
+    {
         $currentUser = User::current();
         if ($currentUser) {
             echo json_encode(['user' => $currentUser]);
@@ -14,7 +16,8 @@ class UserController {
         echo json_encode(['error' => 'Not authenticated']);
     }
 
-    public function register(): void {
+    public function register(): void
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo json_encode(['error' => 'Method not allowed']);
@@ -63,7 +66,8 @@ class UserController {
         echo json_encode(['success' => true, 'message' => 'Registration saved successfully']);
     }
 
-    public function login(): void {
+    public function login(): void
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo json_encode(['error' => 'Method not allowed']);
@@ -79,24 +83,27 @@ class UserController {
             return;
         }
 
-        $isDriver = !empty($data['isDriver']);
-        $identifier = $isDriver ? ($data['phone'] ?? null) : ($data['email'] ?? null);
         $password = $data['password'] ?? null;
 
-        if (!$identifier || !$password) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Missing email/phone or password']);
-            return;
-        }
+
 
         // Find user by email (rider) or phone (driver)
-        $user = $isDriver ? User::findByPhone($identifier) : User::findByEmail($identifier);
 
-        if (!$user) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Account not found. Please create an account first.']);
+        $email = $data['email'] ?? null;
+        $password = $data['password'] ?? null;
+
+        if (!$email || !$password) {
+
+            http_response_code(400);
+
+            echo json_encode([
+                'error' => 'Email and password required'
+            ]);
+
             return;
         }
+
+        $user = User::findByEmail($email);
 
         // Verify password
         if (!password_verify($password, $user['password_hash'])) {

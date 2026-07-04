@@ -21,7 +21,7 @@ class User {
         try {
             $pdo = self::getConnection();
             $stmt = $pdo->prepare(
-                'INSERT INTO users (first_name, last_name, email, phone, password_hash, guardian_name, guardian_number, is_driver, vehicle_type, plate_number, license_number, insurance) VALUES (:first_name, :last_name, :email, :phone, :password_hash, :guardian_name, :guardian_number, :is_driver, :vehicle_type, :plate_number, :license_number, :insurance)'
+                'INSERT INTO users (first_name, last_name, email, phone, password_hash, guardian_name, guardian_number, is_driver) VALUES (:first_name, :last_name, :email, :phone, :password_hash, :guardian_name, :guardian_number, :is_driver)'
             );
 
             $stmt->execute([
@@ -33,10 +33,7 @@ class User {
                 ':guardian_name' => isset($data['guardianName']) ? $data['guardianName'] : null,
                 ':guardian_number' => isset($data['guardianNumber']) ? $data['guardianNumber'] : null,
                 ':is_driver' => !empty($data['isDriver']) ? 1 : 0,
-                ':vehicle_type' => isset($data['vehicleType']) ? $data['vehicleType'] : null,
-                ':plate_number' => isset($data['plateNumber']) ? $data['plateNumber'] : null,
-                ':license_number' => isset($data['licenseNumber']) ? $data['licenseNumber'] : null,
-                ':insurance' => isset($data['insurance']) ? $data['insurance'] : null,
+                
             ]);
 
             return true;
@@ -48,15 +45,6 @@ class User {
         }
     }
 
-    public static function fromGoogleProfile(array $profile): array {
-        return [
-            'id' => $profile['sub'] ?? $profile['id'] ?? null,
-            'email' => $profile['email'] ?? null,
-            'name' => $profile['name'] ?? null,
-            'picture' => $profile['picture'] ?? null,
-            'raw' => $profile,
-        ];
-    }
 
     public static function current(): ?array {
         return $_SESSION['user'] ?? null;
