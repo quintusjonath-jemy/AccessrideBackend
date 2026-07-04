@@ -80,9 +80,11 @@ try {
 
   $fare = $distance * $rate;
   $paymentMethod = isset($data['payment_method']) ? trim($data['payment_method']) : 'cash';
+  $pickupLat = isset($data['pickup_lat']) ? (float)$data['pickup_lat'] : null;
+  $pickupLng = isset($data['pickup_lng']) ? (float)$data['pickup_lng'] : null;
 
   // Create immediate ride
-  $result = $rideModel->create($userId, $pickup, $dropoff, $fare, $vehicleType, $distance, 'pending');
+  $result = $rideModel->create($userId, $pickup, $dropoff, $fare, $vehicleType, $distance, 'pending', $pickupLat, $pickupLng);
 
   if ($result['success']) {
     $rideId = $result['id'];

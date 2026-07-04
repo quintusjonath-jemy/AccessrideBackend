@@ -133,10 +133,49 @@ class Ride
     return null;
   }
 
-  // CREATE A NEW IMMEDIATE RIDE
-  public function create($userId, $pickup, $dropoff, $fare, $vehicleType, $distance = 0.0, $status = 'pending')
+  // Helper to calculate the nearest driver using Haversine formula
+  public function getNearestDriverId($lat, $lng, $vehicleType = null)
   {
-    $driverId = $this->getDefaultDriverId($vehicleType);
+    if ($lat !== null && $lng !== null) {
+      $vehicleFilter = "";
+      if ($vehicleType) {
+        $vehicleFilter = "AND id IN (SELECT driver_id FROM vehicles WHERE LOWER(vehicle_type) = LOWER(?))";
+      }
+
+      $sql = "
+          SELECT id,
+          (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance
+          FROM drivers
+          WHERE status = 'online'
+          AND latitude IS NOT NULL
+          AND longitude IS NOT NULL
+          {$vehicleFilter}
+          ORDER BY distance ASC
+          LIMIT 1
+      ";
+
+      $stmt = $this->conn->prepare($sql);
+      if ($stmt) {
+        if ($vehicleType) {
+          $stmt->bind_param('dddds', $lat, $lng, $lat, $vehicleType);
+        } else {
+          $stmt->bind_param('ddd', $lat, $lng, $lat);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result && $row = $result->fetch_assoc()) {
+          return (int) $row['id'];
+        }
+      }
+    }
+
+    return $this->getDefaultDriverId($vehicleType);
+  }
+
+  // CREATE A NEW IMMEDIATE RIDE
+  public function create($userId, $pickup, $dropoff, $fare, $vehicleType, $distance = 0.0, $status = 'pending', $pickupLat = null, $pickupLng = null)
+  {
+    $driverId = $this->getNearestDriverId($pickupLat, $pickupLng, $vehicleType);
     if ($driverId === null) {
       return [
         'success' => false,
