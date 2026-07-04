@@ -28,11 +28,11 @@ if (!defined('FRONTEND_BASE')) {
 }
 
 if (!defined('DB_HOST')) {
-    define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
+    define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
 }
 
 if (!defined('DB_NAME')) {
-    define('DB_NAME', getenv('DB_NAME') ?: 'access_ride');
+    define('DB_NAME', getenv('DB_NAME') ?: 'accessride');
 }
 
 if (!defined('DB_USER')) {

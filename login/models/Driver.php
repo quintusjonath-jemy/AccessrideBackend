@@ -7,7 +7,6 @@ class Driver
 
     private static function getConnection()
     {
-
         $dsn = sprintf(
             "mysql:host=%s;dbname=%s;charset=%s",
             DB_HOST,
