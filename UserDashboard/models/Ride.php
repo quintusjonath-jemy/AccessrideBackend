@@ -157,7 +157,7 @@ class Ride
       $stmt = $this->conn->prepare($sql);
       if ($stmt) {
         if ($vehicleType) {
-          $stmt->bind_param('dddds', $lat, $lng, $lat, $vehicleType);
+          $stmt->bind_param('ddds', $lat, $lng, $lat, $vehicleType);
         } else {
           $stmt->bind_param('ddd', $lat, $lng, $lat);
         }
