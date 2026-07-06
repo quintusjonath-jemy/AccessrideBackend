@@ -9,22 +9,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-include "db.php";
+require_once '../config/Database.php';
+require_once '../models/Ride.php';
 
-$sql = "SELECT id, fare, status, passenger_name, passenger_initials, trip_time FROM rides WHERE status = 'completed' OR status = 'pending' ORDER BY id DESC LIMIT 5";
-$result = $conn->query($sql);
+try {
+    $database = new Database();
+    $db = $database->connect();
+    $rideModel = new Ride($db);
 
-$trips = [];
+    $driver_id = isset($_GET['driver_id']) ? intval($_GET['driver_id']) : null;
 
-if ($result && $result->num_rows > 0) {
-    while($row = $result->fetch_assoc()) {
+    $tripsData = $rideModel->getRecentTrips($driver_id);
+    $trips = [];
+
+    foreach ($tripsData as $row) {
         $trips[] = [
             'initials' => $row['passenger_initials'] ? $row['passenger_initials'] : 'N/A',
             'name' => $row['passenger_name'] ? $row['passenger_name'] : 'Unknown Passenger',
-            'time' => $row['trip_time'] ? $row['trip_time'] : 'Recently',
+            'time' => $row['ride_date'] ? date('h:i A', strtotime($row['ride_date'])) : 'Recently',
             'amount' => 'Rs. ' . number_format((float)$row['fare'], 2)
         ];
     }
+
+    echo json_encode($trips);
+} catch (Exception $e) {
+    echo json_encode(["error" => $e->getMessage()]);
 }
-echo json_encode($trips);
 ?>
