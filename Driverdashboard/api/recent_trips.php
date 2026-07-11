@@ -11,11 +11,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once '../config/Database.php';
 require_once '../models/Ride.php';
+require_once '../models/Driver.php';
 
 try {
     $database = new Database();
     $db = $database->connect();
     $rideModel = new Ride($db);
+    $driverModel = new Driver($db);
 
     $driver_id = isset($_GET['driver_id']) ? intval($_GET['driver_id']) : null;
 
@@ -31,7 +33,19 @@ try {
         ];
     }
 
-    echo json_encode($trips);
+    $weekly_earnings = 0.00;
+    $weekly_trips = 0;
+    if ($driver_id) {
+        $stats = $driverModel->getStats($driver_id);
+        $weekly_earnings = $stats['weekly_earnings'];
+        $weekly_trips = $stats['weekly_trips'];
+    }
+
+    echo json_encode([
+        "recent_trips" => $trips,
+        "weekly_earnings" => $weekly_earnings,
+        "weekly_trips" => $weekly_trips
+    ]);
 } catch (Exception $e) {
     echo json_encode(["error" => $e->getMessage()]);
 }
