@@ -54,12 +54,10 @@ class TwilioSMS
 
   public function send($to, $message)
   {
-    if (empty($this->sid) || empty($this->token) || empty($this->from) || empty($to)) {
-      return false;
-    }
+    $gateway = getenv('SMS_GATEWAY') ?: 'twilio';
 
     // Format phone number to E.164 if it's a Sri Lankan mobile (e.g. 0771234567 -> +94771234567)
-    $to = trim($to);
+    $to = str_replace(' ', '', trim($to));
     if (strpos($to, '+') !== 0) {
       if (strpos($to, '0') === 0) {
         $to = '+94' . substr($to, 1);
@@ -68,10 +66,88 @@ class TwilioSMS
       }
     }
 
+    if (strtolower($gateway) === 'textbelt') {
+      $url = "https://textbelt.com/text";
+      $postData = [
+        'phone' => $to,
+        'message' => $message,
+        'key' => 'textbelt'
+      ];
+
+      $ch = curl_init($url);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_POST, true);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+      $response = curl_exec($ch);
+      $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      curl_close($ch);
+
+      if ($httpCode >= 200 && $httpCode < 300) {
+        $resObj = json_decode($response, true);
+        return isset($resObj['success']) && $resObj['success'] === true;
+      }
+      return false;
+    }
+
+    if (strtolower($gateway) === 'textlk') {
+      // Format number to 947XXXXXXXX (strip + if present)
+      $cleanTo = str_replace('+', '', $to);
+      if (strpos($cleanTo, '0') === 0) {
+        $cleanTo = '94' . substr($cleanTo, 1);
+      }
+      
+      $url = "https://app.text.lk/api/v3/sms/send";
+      $postData = [
+        'recipient' => $cleanTo,
+        'sender_id' => getenv('TEXTLK_SENDER_ID') ?: 'Promo',
+        'message' => $message
+      ];
+
+      $apiKey = getenv('TEXTLK_API_KEY');
+
+      $ch = curl_init($url);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_POST, true);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
+      curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $apiKey,
+        'Content-Type: application/json',
+        'Accept: application/json'
+      ]);
+      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+      $response = curl_exec($ch);
+      $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      curl_close($ch);
+
+      if ($httpCode >= 200 && $httpCode < 300) {
+        $resObj = json_decode($response, true);
+        return isset($resObj['status']) && ($resObj['status'] === 'success' || $resObj['status'] === true);
+      }
+      return false;
+    }
+
+    // Default: Twilio
+    if (empty($this->sid) || empty($this->token) || empty($this->from) || empty($to)) {
+      return false;
+    }
+
+    // Format From phone number to E.164 if it is a local number
+    $from = str_replace(' ', '', trim($this->from));
+    if (strpos($from, '+') !== 0 && is_numeric($from)) {
+      if (strpos($from, '0') === 0) {
+        $from = '+94' . substr($from, 1);
+      } else {
+        $from = '+94' . $from;
+      }
+    }
+
     $url = "https://api.twilio.com/2010-04-01/Accounts/{$this->sid}/Messages.json";
     $postData = [
       'To' => $to,
-      'From' => $this->from,
+      'From' => $from,
       'Body' => $message
     ];
 
