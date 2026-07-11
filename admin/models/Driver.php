@@ -93,7 +93,14 @@ class Driver
                 s.status AS subscription_status, 
                 s.expires_at AS subscription_expires_at, 
                 s.last_payment_date, 
-                s.amount AS subscription_amount 
+                s.amount AS subscription_amount,
+                COALESCE((
+                    SELECT SUM(r_rating.rating) / NULLIF(COUNT(r_rating.id), 0)
+                    FROM rides r_rating
+                    WHERE r_rating.driver_id = d.id
+                      AND r_rating.status = 'completed'
+                      AND DATE_FORMAT(r_rating.ride_date, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m')
+                ), 0.0) AS monthly_rating
             FROM drivers d 
             LEFT JOIN vehicles v ON d.id = v.driver_id
             LEFT JOIN subscriptions s ON d.id = s.driver_id
@@ -101,6 +108,7 @@ class Driver
     $drivers = [];
 
     while ($row = $result->fetch_assoc()) {
+      $row['monthly_rating'] = (float)$row['monthly_rating'];
       $drivers[] = $row;
     }
 
@@ -128,7 +136,14 @@ class Driver
                 s.last_payment_date, 
                 s.amount AS subscription_amount,
                 (SELECT COUNT(*) FROM rides r WHERE r.driver_id = d.id AND r.status = 'completed') AS completed_rides_count,
-                (SELECT COALESCE(SUM(r.fare), 0) FROM rides r WHERE r.driver_id = d.id AND r.status = 'completed') AS gross_earnings
+                (SELECT COALESCE(SUM(r.fare), 0) FROM rides r WHERE r.driver_id = d.id AND r.status = 'completed') AS gross_earnings,
+                COALESCE((
+                    SELECT SUM(r_rating.rating) / NULLIF(COUNT(r_rating.id), 0)
+                    FROM rides r_rating
+                    WHERE r_rating.driver_id = d.id
+                      AND r_rating.status = 'completed'
+                      AND DATE_FORMAT(r_rating.ride_date, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m')
+                ), 0.0) AS monthly_rating
             FROM drivers d 
             LEFT JOIN vehicles v ON d.id = v.driver_id 
             LEFT JOIN subscriptions s ON d.id = s.driver_id 
@@ -141,6 +156,7 @@ class Driver
     if ($result) {
         $result['completed_rides_count'] = (int) $result['completed_rides_count'];
         $result['gross_earnings'] = (float) $result['gross_earnings'];
+        $result['monthly_rating'] = (float) $result['monthly_rating'];
     }
     return $result;
   }
