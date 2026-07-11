@@ -39,6 +39,8 @@ class Driver
             'total_trips' => 0,
             'today_earnings' => 0.00,
             'today_trips' => 0,
+            'weekly_earnings' => 0.00,
+            'weekly_trips' => 0,
             'current_month_earnings' => 0.00,
             'prev_month_earnings' => 0.00,
             'subscription_expires_at' => 'No Subscription'
@@ -68,6 +70,22 @@ class Driver
 
         $stats['today_trips'] = intval($res['total'] ?? 0);
         $stats['today_earnings'] = floatval($res['earnings'] ?? 0.00);
+
+        // 2.5. Get weekly trips and earnings
+        $weekStart = date('Y-m-d 00:00:00', strtotime('monday this week'));
+        $weekEnd = date('Y-m-d 23:59:59', strtotime('sunday this week'));
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*) as total, SUM(fare) as earnings 
+            FROM rides 
+            WHERE driver_id = ? 
+            AND status = 'completed' 
+            AND ride_date BETWEEN ? AND ?
+        ");
+        $stmt->bind_param("iss", $driverId, $weekStart, $weekEnd);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        $stats['weekly_trips'] = intval($res['total'] ?? 0);
+        $stats['weekly_earnings'] = floatval($res['earnings'] ?? 0.00);
 
         // 3. Get current month earnings
         $currentMonthStart = date('Y-m-01 00:00:00');

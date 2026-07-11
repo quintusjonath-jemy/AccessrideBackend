@@ -28,7 +28,7 @@ if (!defined('FRONTEND_BASE')) {
 }
 
 if (!defined('DB_HOST')) {
-    define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+    define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
 }
 
 if (!defined('DB_NAME')) {
