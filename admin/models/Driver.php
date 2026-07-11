@@ -16,7 +16,7 @@ class Driver
     // Auto-expire checks: check for drivers whose subscription has active status but expired date
     $today = date('Y-m-d');
     $expiredQuery = "
-            SELECT d.id, TRIM(CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, ''))) AS name 
+            SELECT d.id, d.phone, TRIM(CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, ''))) AS name, s.expires_at 
             FROM drivers d
             JOIN subscriptions s ON d.id = s.driver_id
             WHERE s.status = 'active' AND s.expires_at < '$today'
@@ -26,6 +26,8 @@ class Driver
       while ($row = $expiredRes->fetch_assoc()) {
         $driverId = (int) $row['id'];
         $driverName = $row['name'];
+        $driverPhone = $row['phone'];
+        $expiryDate = $row['expires_at'];
 
         // Update driver subscription status to expired
         $this->conn->query("UPDATE subscriptions SET status = 'expired' WHERE driver_id = $driverId");
@@ -35,6 +37,16 @@ class Driver
         $stmtNotif = $this->conn->prepare("INSERT INTO admin_notifications (type, message) VALUES ('Driver', ?)");
         $stmtNotif->bind_param('s', $msg);
         $stmtNotif->execute();
+
+        // Send warning SMS to the specific driver phone number when subscription expires
+        if (!empty($driverPhone)) {
+          $smsMsg = "AccessRide Notice: Dear {$driverName}, your subscription has expired on {$expiryDate}. Please activate it on your dashboard to continue receiving bookings.";
+          $logDir = __DIR__ . '/../../logs';
+          if (!is_dir($logDir)) {
+            mkdir($logDir, 0777, true);
+          }
+          file_put_contents($logDir . '/sms_log.txt', "[" . date('Y-m-d H:i:s') . "] SMS Expiry sent to {$driverPhone}: {$smsMsg}\n", FILE_APPEND);
+        }
       }
     }
 
