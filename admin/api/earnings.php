@@ -27,6 +27,14 @@ if ($check_column && $check_column->num_rows === 0) {
   $conn->query("ALTER TABLE subscriptions ADD COLUMN warning_sent TINYINT(1) DEFAULT 0");
 }
 
+// Ensure Twilio settings columns exist
+$check_twilio = $conn->query("SHOW COLUMNS FROM settings LIKE 'twilio_sid'");
+if ($check_twilio && $check_twilio->num_rows === 0) {
+  $conn->query("ALTER TABLE settings ADD COLUMN twilio_sid VARCHAR(255) NULL");
+  $conn->query("ALTER TABLE settings ADD COLUMN twilio_token VARCHAR(255) NULL");
+  $conn->query("ALTER TABLE settings ADD COLUMN twilio_from VARCHAR(50) NULL");
+}
+
 // 0. Automated Subscription Expired Grace Period Warning (3 days)
 $threeDaysAgo = date('Y-m-d H:i:s', strtotime('-3 days'));
 $warningQuery = "
@@ -46,13 +54,18 @@ $warningResult = $conn->query($warningQuery);
 if ($warningResult && $warningResult->num_rows > 0) {
   include_once '../config/Encryption.php';
   include_once '../config/SMTPMailer.php';
+  include_once '../config/sms.php';
 
-  // Get SMTP Config
+  // Get SMTP & Twilio Config
   $smtp_host = '';
   $smtp_port = 465;
   $smtp_user = '';
   $smtp_pass = '';
   $smtp_secure = 'ssl';
+
+  $twilio_sid = '';
+  $twilio_token = '';
+  $twilio_from = '';
 
   $settingsRes = $conn->query("SELECT * FROM settings WHERE admin_id = 1 LIMIT 1");
   if ($settingsRes && $settingsRes->num_rows > 0) {
@@ -64,6 +77,17 @@ if ($warningResult && $warningResult->num_rows > 0) {
     $smtp_secure = $settingsRow['smtp_secure'] ?? 'ssl';
     if (!empty($smtp_pass_enc)) {
       $smtp_pass = Encryption::decrypt($smtp_pass_enc);
+    }
+    
+    $twilio_sid = $settingsRow['twilio_sid'] ?? '';
+    $twilio_token_enc = $settingsRow['twilio_token'] ?? '';
+    $twilio_from = $settingsRow['twilio_from'] ?? '';
+    if (!empty($twilio_token_enc)) {
+      try {
+        $twilio_token = Encryption::decrypt($twilio_token_enc);
+      } catch (Exception $e) {
+        $twilio_token = $twilio_token_enc;
+      }
     }
   }
 
@@ -94,11 +118,17 @@ if ($warningResult && $warningResult->num_rows > 0) {
     $driverPhone = $wRow['phone'] ?? '';
     if (!empty($driverPhone)) {
       $smsMsg = "AccessRide Notice: Dear {$driverName}, your subscription expired on {$expiryDate}. Please activate it on your dashboard to continue receiving bookings.";
+      
+      $smsSent = false;
+      $twilio = new TwilioSMS($twilio_sid, $twilio_token, $twilio_from);
+      $smsSent = $twilio->send($driverPhone, $smsMsg);
+
       $logDir = __DIR__ . '/../../logs';
       if (!is_dir($logDir)) {
         mkdir($logDir, 0777, true);
       }
-      file_put_contents($logDir . '/sms_log.txt', "[" . date('Y-m-d H:i:s') . "] SMS Warning sent to {$driverPhone}: {$smsMsg}\n", FILE_APPEND);
+      $statusStr = $smsSent ? "delivered" : "failed/mocked";
+      file_put_contents($logDir . '/sms_log.txt', "[" . date('Y-m-d H:i:s') . "] SMS Warning ({$statusStr}) sent to {$driverPhone}: {$smsMsg}\n", FILE_APPEND);
     }
 
     // Mark warning as sent

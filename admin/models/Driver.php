@@ -41,11 +41,38 @@ class Driver
         // Send warning SMS to the specific driver phone number when subscription expires
         if (!empty($driverPhone)) {
           $smsMsg = "AccessRide Notice: Dear {$driverName}, your subscription has expired on {$expiryDate}. Please activate it on your dashboard to continue receiving bookings.";
+          
+          // Get Twilio config from settings
+          $twilio_sid = '';
+          $twilio_token = '';
+          $twilio_from = '';
+          $settingsRes = $this->conn->query("SELECT * FROM settings WHERE admin_id = 1 LIMIT 1");
+          if ($settingsRes && $settingsRes->num_rows > 0) {
+            $settingsRow = $settingsRes->fetch_assoc();
+            $twilio_sid = $settingsRow['twilio_sid'] ?? '';
+            $twilio_token_enc = $settingsRow['twilio_token'] ?? '';
+            $twilio_from = $settingsRow['twilio_from'] ?? '';
+            if (!empty($twilio_token_enc)) {
+              include_once __DIR__ . '/../config/Encryption.php';
+              try {
+                $twilio_token = Encryption::decrypt($twilio_token_enc);
+              } catch (Exception $e) {
+                $twilio_token = $twilio_token_enc;
+              }
+            }
+          }
+
+          $smsSent = false;
+          include_once __DIR__ . '/../config/sms.php';
+          $twilio = new TwilioSMS($twilio_sid, $twilio_token, $twilio_from);
+          $smsSent = $twilio->send($driverPhone, $smsMsg);
+
           $logDir = __DIR__ . '/../../logs';
           if (!is_dir($logDir)) {
             mkdir($logDir, 0777, true);
           }
-          file_put_contents($logDir . '/sms_log.txt', "[" . date('Y-m-d H:i:s') . "] SMS Expiry sent to {$driverPhone}: {$smsMsg}\n", FILE_APPEND);
+          $statusStr = $smsSent ? "delivered" : "failed/mocked";
+          file_put_contents($logDir . '/sms_log.txt', "[" . date('Y-m-d H:i:s') . "] SMS Expiry ({$statusStr}) sent to {$driverPhone}: {$smsMsg}\n", FILE_APPEND);
         }
       }
     }
