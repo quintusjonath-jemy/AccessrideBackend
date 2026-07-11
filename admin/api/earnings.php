@@ -27,6 +27,12 @@ if ($check_column && $check_column->num_rows === 0) {
   $conn->query("ALTER TABLE subscriptions ADD COLUMN warning_sent TINYINT(1) DEFAULT 0");
 }
 
+// Ensure rating column exists in rides table
+$check_rating = $conn->query("SHOW COLUMNS FROM rides LIKE 'rating'");
+if ($check_rating && $check_rating->num_rows === 0) {
+  $conn->query("ALTER TABLE rides ADD COLUMN rating INT DEFAULT NULL");
+}
+
 // Ensure Twilio settings columns exist
 $check_twilio = $conn->query("SHOW COLUMNS FROM settings LIKE 'twilio_sid'");
 if ($check_twilio && $check_twilio->num_rows === 0) {
