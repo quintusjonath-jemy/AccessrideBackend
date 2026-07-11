@@ -67,15 +67,28 @@ try {
   $vehicleType = isset($data['vehicle_type']) ? trim($data['vehicle_type']) : 'car';
   $distance = isset($data['distance_km']) ? (float) $data['distance_km'] : 0.0;
 
-  // Calculate fare rate:
-  // Moto: Rs. 40/km, Auto: Rs. 60/km, Eco: Rs. 80/km, Van: Rs. 100/km (default is 80)
+  // Fetch rates from settings dynamically
   $rate = 80.0;
-  if (strtolower($vehicleType) === 'bike') {
-    $rate = 40.0;
-  } else if (strtolower($vehicleType) === 'three wheeler') {
-    $rate = 60.0;
-  } else if (strtolower($vehicleType) === 'van') {
-    $rate = 100.0;
+  $settingsRes = $db->query("SELECT rate_bike, rate_three_wheeler, rate_car, rate_van FROM settings WHERE admin_id = 1 LIMIT 1");
+  if ($settingsRes && $settingsRes->num_rows > 0) {
+    $settingsRow = $settingsRes->fetch_assoc();
+    if (strtolower($vehicleType) === 'bike') {
+      $rate = (float)($settingsRow['rate_bike'] ?? 40.0);
+    } else if (strtolower($vehicleType) === 'three wheeler') {
+      $rate = (float)($settingsRow['rate_three_wheeler'] ?? 60.0);
+    } else if (strtolower($vehicleType) === 'van') {
+      $rate = (float)($settingsRow['rate_van'] ?? 100.0);
+    } else {
+      $rate = (float)($settingsRow['rate_car'] ?? 80.0);
+    }
+  } else {
+    if (strtolower($vehicleType) === 'bike') {
+      $rate = 40.0;
+    } else if (strtolower($vehicleType) === 'three wheeler') {
+      $rate = 60.0;
+    } else if (strtolower($vehicleType) === 'van') {
+      $rate = 100.0;
+    }
   }
 
   $fare = $distance * $rate;
