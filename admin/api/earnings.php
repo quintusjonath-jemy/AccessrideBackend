@@ -181,7 +181,14 @@ $driversQuery = "
         s.amount AS subscription_amount,
         s.warning_sent,
         COUNT(r.id) AS completed_rides_count,
-        COALESCE(SUM(r.fare), 0) AS gross_earnings
+        COALESCE(SUM(r.fare), 0) AS gross_earnings,
+        COALESCE((
+            SELECT SUM(r_rating.rating) / NULLIF(COUNT(r_rating.id), 0)
+            FROM rides r_rating
+            WHERE r_rating.driver_id = d.id
+              AND r_rating.status = 'completed'
+              AND DATE_FORMAT(r_rating.ride_date, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m')
+        ), 0.0) AS monthly_rating
     FROM drivers d
     LEFT JOIN vehicles v ON d.id = v.driver_id
     LEFT JOIN subscriptions s ON d.id = s.driver_id
@@ -201,6 +208,7 @@ if ($driversResult) {
     $row['net_earnings'] = $row['gross_earnings'];  // 100% of fare goes to driver
     $row['subscription_amount'] = (float) $row['subscription_amount'];
     $row['warning_sent'] = (int) ($row['warning_sent'] ?? 0);
+    $row['monthly_rating'] = (float) $row['monthly_rating'];
     $driversEarnings[] = $row;
   }
 }
