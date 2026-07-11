@@ -34,6 +34,7 @@ $warningQuery = "
         s.driver_id,
         s.expires_at,
         d.email,
+        d.phone,
         TRIM(CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, ''))) AS driver_name
     FROM subscriptions s
     JOIN drivers d ON s.driver_id = d.id
@@ -87,6 +88,17 @@ if ($warningResult && $warningResult->num_rows > 0) {
       $emailBody = "Dear {$driverName},\n\nYour AccessRide driver membership subscription expired on {$expiryDate} and has not been activated within the 3-day grace period.\n\nPlease log in to your dashboard and activate your subscription to resume receiving ride bookings.\n\nBest regards,\nAccessRide Team";
       $headers = "From: {$smtp_user}\r\nReply-To: {$smtp_user}\r\nContent-Type: text/plain; charset=UTF-8";
       $mailer->send($driverEmail, $subject, $emailBody, $headers);
+    }
+
+    // Send warning SMS to driver
+    $driverPhone = $wRow['phone'] ?? '';
+    if (!empty($driverPhone)) {
+      $smsMsg = "AccessRide Notice: Dear {$driverName}, your subscription expired on {$expiryDate}. Please activate it on your dashboard to continue receiving bookings.";
+      $logDir = __DIR__ . '/../../logs';
+      if (!is_dir($logDir)) {
+        mkdir($logDir, 0777, true);
+      }
+      file_put_contents($logDir . '/sms_log.txt', "[" . date('Y-m-d H:i:s') . "] SMS Warning sent to {$driverPhone}: {$smsMsg}\n", FILE_APPEND);
     }
 
     // Mark warning as sent

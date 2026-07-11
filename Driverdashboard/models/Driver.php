@@ -117,9 +117,12 @@ class Driver
         $res = $stmt->get_result()->fetch_assoc();
         $stats['prev_month_earnings'] = floatval($res['earnings'] ?? 0.00);
 
-        // 5. Get subscription expiry date
+        // 5. Get subscription status and expiry date
+        $stats['subscription_status'] = 'No Active Plan';
+        $stats['subscription_expires_at'] = 'No Active Plan';
+        
         $stmt = $this->db->prepare("
-            SELECT expires_at 
+            SELECT status, expires_at 
             FROM subscriptions 
             WHERE driver_id = ? 
             ORDER BY id DESC 
@@ -128,8 +131,15 @@ class Driver
         $stmt->bind_param("i", $driverId);
         $stmt->execute();
         $res = $stmt->get_result()->fetch_assoc();
-        if ($res && !empty($res['expires_at'])) {
-            $stats['subscription_expires_at'] = date('Y-m-d', strtotime($res['expires_at']));
+        if ($res) {
+            $stats['subscription_status'] = $res['status'] ?? 'expired';
+            if (!empty($res['expires_at'])) {
+                $stats['subscription_expires_at'] = date('Y-m-d', strtotime($res['expires_at']));
+                // If the expiration timestamp is in the past, force status to expired
+                if (strtotime($res['expires_at']) < time()) {
+                    $stats['subscription_status'] = 'expired';
+                }
+            }
         }
 
         return $stats;
