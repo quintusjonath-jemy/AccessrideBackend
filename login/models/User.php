@@ -20,8 +20,10 @@ class User {
 
         try {
             $pdo = self::getConnection();
+            $pdo->beginTransaction();
+
             $stmt = $pdo->prepare(
-                'INSERT INTO users (first_name, last_name, email, phone, password_hash, guardian_name, guardian_number, is_driver) VALUES (:first_name, :last_name, :email, :phone, :password_hash, :guardian_name, :guardian_number, :is_driver)'
+                'INSERT INTO users (first_name, last_name, email, phone, password_hash) VALUES (:first_name, :last_name, :email, :phone, :password_hash)'
             );
 
             $stmt->execute([
@@ -29,18 +31,33 @@ class User {
                 ':last_name' => isset($data['lastName']) ? $data['lastName'] : '',
                 ':email' => isset($data['email']) ? $data['email'] : '',
                 ':phone' => isset($data['phone']) ? $data['phone'] : '',
-                ':password_hash' => password_hash(isset($data['password']) ? $data['password'] : '', PASSWORD_DEFAULT),
-                ':guardian_name' => isset($data['guardianName']) ? $data['guardianName'] : null,
-                ':guardian_number' => isset($data['guardianNumber']) ? $data['guardianNumber'] : null,
-                ':is_driver' => !empty($data['isDriver']) ? 1 : 0,
-                
+                ':password_hash' => password_hash(isset($data['password']) ? $data['password'] : '', PASSWORD_DEFAULT)
             ]);
 
+            $userId = $pdo->lastInsertId();
+
+            if (!empty($data['guardianName']) && !empty($data['guardianNumber'])) {
+                $stmtGuardian = $pdo->prepare(
+                    'INSERT INTO emergency_contacts (user_id, contact_name, relationship, phone_number) VALUES (:user_id, :contact_name, :relationship, :phone_number)'
+                );
+                $stmtGuardian->execute([
+                    ':user_id' => $userId,
+                    ':contact_name' => $data['guardianName'],
+                    ':relationship' => 'guardian',
+                    ':phone_number' => $data['guardianNumber']
+                ]);
+            }
+
+            $pdo->commit();
             return true;
         } catch (Exception $e) {
-            echo "<pre>";
-            print_r($e->getMessage());
-            echo "</pre>";
+            if (isset($pdo) && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            // Return JSON response rather than HTML <pre> so frontend gets clean error messages
+            header('Content-Type: application/json');
+            http_response_code(500);
+            echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
             exit;
         }
     }
