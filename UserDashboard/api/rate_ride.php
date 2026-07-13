@@ -44,6 +44,37 @@ try {
   $stmt->bind_param('ii', $rating, $rideId);
   
   if ($stmt->execute()) {
+    // Get driver_id of this ride
+    $stmt_driver = $db->prepare("SELECT driver_id FROM rides WHERE id = ?");
+    $stmt_driver->bind_param('i', $rideId);
+    $stmt_driver->execute();
+    $res_driver = $stmt_driver->get_result()->fetch_assoc();
+    
+    if ($res_driver && !empty($res_driver['driver_id'])) {
+      $driverId = (int)$res_driver['driver_id'];
+      
+      // Calculate new average rating for this driver
+      $stmt_avg = $db->prepare("SELECT AVG(rating) AS avg_rating FROM rides WHERE driver_id = ? AND rating IS NOT NULL");
+      $stmt_avg->bind_param('i', $driverId);
+      $stmt_avg->execute();
+      $res_avg = $stmt_avg->get_result()->fetch_assoc();
+      
+      if ($res_avg && $res_avg['avg_rating'] !== null) {
+        $avgRating = floatval($res_avg['avg_rating']);
+        
+        // Make sure rating column exists in drivers table
+        $check_driver_rating = $db->query("SHOW COLUMNS FROM drivers LIKE 'rating'");
+        if ($check_driver_rating && $check_driver_rating->num_rows === 0) {
+          $db->query("ALTER TABLE drivers ADD COLUMN rating DECIMAL(3,2) DEFAULT NULL");
+        }
+        
+        // Update rating in drivers table
+        $stmt_update_driver = $db->prepare("UPDATE drivers SET rating = ? WHERE id = ?");
+        $stmt_update_driver->bind_param('di', $avgRating, $driverId);
+        $stmt_update_driver->execute();
+      }
+    }
+
     echo json_encode(['success' => true, 'message' => 'Rating submitted successfully']);
   } else {
     echo json_encode(['success' => false, 'message' => 'Failed to update rating']);

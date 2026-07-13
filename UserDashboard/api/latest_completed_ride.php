@@ -13,6 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
   exit;
 }
 
+if (php_sapi_name() === 'cli') {
+  parse_str(getenv('QUERY_STRING') ?: '', $_GET);
+}
+
 require_once __DIR__ . '/../config/Database.php';
 
 try {
@@ -32,7 +36,7 @@ try {
   }
 
   // Get most recent completed or accepted/active ride for this user to show completion details
-  $sql = "SELECT r.*, d.name AS driver_name, v.vehicle_type, v.vehicle_number 
+  $sql = "SELECT r.*, TRIM(CONCAT(d.first_name, ' ', COALESCE(d.last_name, ''))) AS driver_name, v.vehicle_type, v.vehicle_number 
           FROM rides r 
           LEFT JOIN drivers d ON r.driver_id = d.id 
           LEFT JOIN vehicles v ON d.id = v.driver_id 
