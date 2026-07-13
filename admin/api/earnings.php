@@ -189,7 +189,7 @@ $driversQuery = "
         COUNT(r.id) AS completed_rides_count,
         COALESCE(SUM(r.fare), 0) AS gross_earnings,
         COALESCE((
-            SELECT SUM(r_rating.rating) / NULLIF(COUNT(r_rating.id), 0)
+            SELECT AVG(r_rating.rating)
             FROM rides r_rating
             WHERE r_rating.driver_id = d.id
               AND r_rating.status = 'completed'
@@ -219,6 +219,48 @@ if ($driversResult) {
   }
 }
 
+// Get Driver of the Month (highest monthly average rating for completed rides in the current month)
+$monthlyDriverQuery = "
+    SELECT 
+        d.id,
+        TRIM(CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, ''))) AS name,
+        d.phone,
+        d.profile_image,
+        COALESCE((
+            SELECT AVG(r_rating.rating)
+            FROM rides r_rating
+            WHERE r_rating.driver_id = d.id
+              AND r_rating.status = 'completed'
+              AND DATE_FORMAT(r_rating.ride_date, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m')
+        ), 0.0) AS monthly_rating,
+        (
+            SELECT COUNT(*) 
+            FROM rides r_cnt 
+            WHERE r_cnt.driver_id = d.id 
+              AND r_cnt.status = 'completed' 
+              AND DATE_FORMAT(r_cnt.ride_date, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m')
+        ) AS completed_rides
+    FROM drivers d
+    INNER JOIN rides r ON d.id = r.driver_id AND r.status = 'completed'
+    WHERE DATE_FORMAT(r.ride_date, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m')
+    GROUP BY d.id, d.first_name, d.last_name, d.phone, d.profile_image
+    HAVING monthly_rating > 0
+    ORDER BY monthly_rating DESC, completed_rides DESC
+    LIMIT 1
+";
+$monthlyDriverResult = $conn->query($monthlyDriverQuery);
+$monthlyDriver = null;
+if ($monthlyDriverResult && $row_md = $monthlyDriverResult->fetch_assoc()) {
+    $monthlyDriver = [
+        'id' => (int)$row_md['id'],
+        'name' => $row_md['name'],
+        'phone' => $row_md['phone'],
+        'profile_image' => $row_md['profile_image'],
+        'monthly_rating' => floatval($row_md['monthly_rating']),
+        'completed_rides' => (int)$row_md['completed_rides']
+    ];
+}
+
 echo json_encode([
   'success' => true,
   'platform' => [
@@ -230,6 +272,7 @@ echo json_encode([
     'total_earnings' => $totalPlatformEarnings,
     'total_completed_rides' => $totalCompletedRides
   ],
-  'drivers' => $driversEarnings
+  'drivers' => $driversEarnings,
+  'monthly_driver' => $monthlyDriver
 ]);
 ?>
