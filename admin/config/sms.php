@@ -164,5 +164,54 @@ class TwilioSMS
 
     return $httpCode >= 200 && $httpCode < 300;
   }
+
+  public function makeCall($to, $message)
+  {
+    if (empty($this->sid) || empty($this->token) || empty($this->from) || empty($to)) {
+      return false;
+    }
+
+    // Format phone number to E.164
+    $to = str_replace(' ', '', trim($to));
+    if (strpos($to, '+') !== 0) {
+      if (strpos($to, '0') === 0) {
+        $to = '+94' . substr($to, 1);
+      } else {
+        $to = '+94' . $to;
+      }
+    }
+
+    $from = str_replace(' ', '', trim($this->from));
+    if (strpos($from, '+') !== 0 && is_numeric($from)) {
+      if (strpos($from, '0') === 0) {
+        $from = '+94' . substr($from, 1);
+      } else {
+        $from = '+94' . $from;
+      }
+    }
+
+    // Wrap the message in TwiML
+    $twiml = '<Response><Say voice="alice" loop="3">' . htmlspecialchars($message) . '</Say></Response>';
+
+    $url = "https://api.twilio.com/2010-04-01/Accounts/{$this->sid}/Calls.json";
+    $postData = [
+      'To' => $to,
+      'From' => $from,
+      'Twiml' => $twiml
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_USERPWD, "{$this->sid}:{$this->token}");
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    return $httpCode >= 200 && $httpCode < 300;
+  }
 }
 ?>
