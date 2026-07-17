@@ -81,6 +81,27 @@ if ($method === 'POST') {
     );
 
     if ($stmt->execute()) {
+        // Send Emergency SMS alert via Twilio/Text.lk
+        try {
+            include_once __DIR__ . '/../admin/config/sms.php';
+            
+            // Get user details
+            $user_name = "Passenger";
+            $user_sql = "SELECT TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) AS full_name FROM users WHERE id = ?";
+            $user_stmt = $db->prepare($user_sql);
+            if ($user_stmt) {
+                $user_stmt->bind_param("i", $user_id);
+                $user_stmt->execute();
+                $user_res = $user_stmt->get_result()->fetch_assoc();
+                if ($user_res && !empty($user_res['full_name'])) {
+                    $user_name = $user_res['full_name'];
+                }
+                $user_stmt->close();
+            }
+        } catch (Exception $e) {
+            error_log("SOS Alert insert details: " . $e->getMessage());
+        }
+
         // Fetch driver information if driver_id exists
         $driver_info = null;
         if (!empty($driver_id)) {
