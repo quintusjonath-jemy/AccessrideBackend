@@ -70,7 +70,7 @@ try {
     }
 
     // Set plan variables
-    $amount = 3000.00; // Standard Subscription Amount (LKR)
+    $amount = 1500.00; // Standard Subscription Amount (LKR)
     $currency = 'LKR';
     $amount_formatted = number_format($amount, 2, '.', '');
     

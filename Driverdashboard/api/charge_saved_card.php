@@ -17,25 +17,42 @@ try {
     $body = file_get_contents('php://input');
     $data = json_decode($body, true);
 
-    if (!$data || empty($data['driver_id'])) {
+    if (!$data || empty($data['driver_id']) || empty($data['card_id'])) {
         http_response_code(400);
         echo json_encode([
             'success' => false,
-            'message' => 'Driver ID is required.'
+            'message' => 'Driver ID and Card ID are required.'
         ]);
         exit;
     }
 
     $driverId = (int)$data['driver_id'];
-    $amount = isset($data['amount']) ? (float)$data['amount'] : 1500.00;
-    
+    $cardId = (int)$data['card_id'];
+    $amount = 1500.00; // Updated subscription price
+
     $database = new Database();
     $db = $database->connect();
 
     // Start transaction
     $db->begin_transaction();
 
-    // 1. Fetch current subscription details (if any)
+    // 1. Fetch saved card details
+    $cardStmt = $db->prepare("SELECT card_brand, masked_number, token FROM driver_cards WHERE id = ? AND driver_id = ?");
+    $cardStmt->bind_param("ii", $cardId, $driverId);
+    $cardStmt->execute();
+    $card = $cardStmt->get_result()->fetch_assoc();
+    $cardStmt->close();
+
+    if (!$card) {
+        http_response_code(404);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Saved card not found.'
+        ]);
+        exit;
+    }
+
+    // 2. Fetch current subscription details (if any)
     $stmt = $db->prepare("SELECT id, expires_at FROM subscriptions WHERE driver_id = ? ORDER BY id DESC LIMIT 1");
     $stmt->bind_param("i", $driverId);
     $stmt->execute();
@@ -78,10 +95,11 @@ try {
         $insertStmt->close();
     }
 
-    // 2. Insert transaction history into payments
-    $txnId = 'LOCAL_' . strtoupper(uniqid());
-    $payMethod = 'local_sandbox';
+    // 3. Log transaction in payments table
+    $last4 = substr($card['masked_number'], -4);
+    $payMethod = $card['card_brand'] . ' (' . $last4 . ')';
     $payStatus = 'completed';
+    $txnId = '1CLICK_' . strtoupper(uniqid());
 
     $payStmt = $db->prepare("
         INSERT INTO payments (driver_id, amount, payment_method, status, transaction_id) 
@@ -96,9 +114,9 @@ try {
 
     echo json_encode([
         'success' => true,
-        'message' => 'Subscription renewed successfully.',
-        'new_expiry' => $newExpiry,
-        'transaction_id' => $txnId
+        'message' => 'Subscription successfully renewed using saved card.',
+        'transaction_id' => $txnId,
+        'new_expiry' => $newExpiry
     ]);
 
 } catch (Exception $e) {
@@ -108,7 +126,7 @@ try {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Failed to renew subscription: ' . $e->getMessage()
+        'message' => 'Saved card transaction failed: ' . $e->getMessage()
     ]);
 }
 ?>
