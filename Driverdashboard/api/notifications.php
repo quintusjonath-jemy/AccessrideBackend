@@ -1,6 +1,6 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+error_reporting(0);
+ini_set('display_errors', 0);
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -31,10 +31,12 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ");
 
-    // --- MARK AS READ ---
+    // -------------------------------------------------------
+    // POST: mark as read / mark all read
+    // -------------------------------------------------------
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $body = json_decode(file_get_contents('php://input'), true);
-        $action = $body['action'] ?? '';
+        $action   = $body['action'] ?? '';
         $driverId = isset($body['driver_id']) ? (int)$body['driver_id'] : 0;
 
         if (!$driverId) {
@@ -57,11 +59,14 @@ try {
             $stmt->execute();
             $stmt->close();
         }
+
         echo json_encode(['success' => true]);
         exit;
     }
 
-    // --- GET NOTIFICATIONS ---
+    // -------------------------------------------------------
+    // GET: fetch notifications
+    // -------------------------------------------------------
     if (empty($_GET['driver_id'])) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Driver ID required']);
@@ -70,9 +75,30 @@ try {
 
     $driverId = (int)$_GET['driver_id'];
 
-    // Auto-generate subscription-related notifications if not present
+    // -----------------------------------------------------------
+    // COUNT-ONLY mode: DriverHeader bell uses ?driver_id=X&count=1
+    // This does NOT auto-generate any notifications — it just
+    // returns the unread count quickly so the bell badge updates.
+    // -----------------------------------------------------------
+    if (!empty($_GET['count'])) {
+        $countStmt = $db->prepare("SELECT COUNT(*) as cnt FROM driver_notifications WHERE driver_id = ? AND is_read = 0");
+        $countStmt->bind_param("i", $driverId);
+        $countStmt->execute();
+        $countRow = $countStmt->get_result()->fetch_assoc();
+        $countStmt->close();
+        echo json_encode(['success' => true, 'unread_count' => (int)($countRow['cnt'] ?? 0)]);
+        exit;
+    }
+
+    // -----------------------------------------------------------
+    // Full GET: auto-generate system notifications then return list
+    // -----------------------------------------------------------
+
+    // 1. Subscription expiry warning
+    // Insert at most one warning per calendar day per driver.
     $subStmt = $db->prepare("
-        SELECT status, expires_at FROM subscriptions WHERE driver_id = ? ORDER BY id DESC LIMIT 1
+        SELECT status, expires_at FROM subscriptions
+        WHERE driver_id = ? ORDER BY id DESC LIMIT 1
     ");
     $subStmt->bind_param("i", $driverId);
     $subStmt->execute();
@@ -81,15 +107,19 @@ try {
 
     if ($sub) {
         $expiresAt = $sub['expires_at'] ?? null;
-        $status = $sub['status'] ?? 'expired';
+        $status    = $sub['status'] ?? 'expired';
 
-        // If subscription expires within 7 days, create a warning notification (only if not already created today)
         if ($expiresAt && strtotime($expiresAt) > time()) {
             $daysLeft = (int)ceil((strtotime($expiresAt) - time()) / 86400);
             if ($daysLeft <= 7) {
+                // Check: one warning per day
                 $checkStmt = $db->prepare("
-                    SELECT id FROM driver_notifications 
-                    WHERE driver_id = ? AND type = 'warning' AND title LIKE '%Subscription%' AND DATE(created_at) = CURDATE()
+                    SELECT id FROM driver_notifications
+                    WHERE driver_id = ?
+                      AND type = 'warning'
+                      AND title = 'Subscription Expiring Soon'
+                      AND DATE(created_at) = CURDATE()
+                    LIMIT 1
                 ");
                 $checkStmt->bind_param("i", $driverId);
                 $checkStmt->execute();
@@ -97,22 +127,26 @@ try {
                 $checkStmt->close();
 
                 if (!$exists) {
-                    $title = "Subscription Expiring Soon";
+                    $title   = "Subscription Expiring Soon";
                     $message = "Your driver subscription expires on {$expiresAt} ({$daysLeft} day(s) left). Renew now to stay active.";
-                    $type = 'warning';
-                    $insStmt = $db->prepare("INSERT INTO driver_notifications (driver_id, title, message, type) VALUES (?, ?, ?, ?)");
-                    $insStmt->bind_param("isss", $driverId, $title, $message, $type);
-                    $insStmt->execute();
-                    $insStmt->close();
+                    $type    = 'warning';
+                    $ins     = $db->prepare("INSERT INTO driver_notifications (driver_id, title, message, type) VALUES (?, ?, ?, ?)");
+                    $ins->bind_param("isss", $driverId, $title, $message, $type);
+                    $ins->execute();
+                    $ins->close();
                 }
             }
         }
 
+        // 2. Payment success notification
+        // FIX: key by the exact payment ID, not just its date.
+        // We store the payment ID in the message so we can check if we
+        // already created a notification for that specific payment.
         if ($status === 'active') {
-            // Create a payment success notification from last successful payment if not done today
             $payStmt = $db->prepare("
-                SELECT amount, payment_method, created_at FROM payments 
-                WHERE driver_id = ? AND status = 'completed' ORDER BY id DESC LIMIT 1
+                SELECT id, amount, payment_method, created_at FROM payments
+                WHERE driver_id = ? AND status = 'completed'
+                ORDER BY id DESC LIMIT 1
             ");
             $payStmt->bind_param("i", $driverId);
             $payStmt->execute();
@@ -120,26 +154,32 @@ try {
             $payStmt->close();
 
             if ($pay) {
+                $paymentId = (int)$pay['id'];
+
+                // Check: has a payment notification already been created for this exact payment?
                 $checkPay = $db->prepare("
-                    SELECT id FROM driver_notifications 
-                    WHERE driver_id = ? AND type = 'payment' AND DATE(created_at) = ?
+                    SELECT id FROM driver_notifications
+                    WHERE driver_id = ?
+                      AND type = 'payment'
+                      AND message LIKE ?
+                    LIMIT 1
                 ");
-                $payDate = date('Y-m-d', strtotime($pay['created_at']));
-                $checkPay->bind_param("is", $driverId, $payDate);
+                $searchPattern = "%#PAY-{$paymentId}%";
+                $checkPay->bind_param("is", $driverId, $searchPattern);
                 $checkPay->execute();
                 $payExists = $checkPay->get_result()->fetch_assoc();
                 $checkPay->close();
 
                 if (!$payExists) {
-                    $title = "Payment Successful";
-                    $amount = number_format((float)$pay['amount'], 2);
-                    $method = $pay['payment_method'] ?? 'Card';
-                    $message = "Your subscription payment of Rs. {$amount} was processed successfully via {$method}. You are now active.";
-                    $type = 'payment';
-                    $insStmt = $db->prepare("INSERT INTO driver_notifications (driver_id, title, message, type) VALUES (?, ?, ?, ?)");
-                    $insStmt->bind_param("isss", $driverId, $title, $message, $type);
-                    $insStmt->execute();
-                    $insStmt->close();
+                    $title   = "Payment Successful";
+                    $amount  = number_format((float)$pay['amount'], 2);
+                    $method  = $pay['payment_method'] ?? 'Card';
+                    $message = "Your subscription payment of Rs. {$amount} was processed successfully via {$method}. You are now active. [#PAY-{$paymentId}]";
+                    $type    = 'payment';
+                    $ins     = $db->prepare("INSERT INTO driver_notifications (driver_id, title, message, type) VALUES (?, ?, ?, ?)");
+                    $ins->bind_param("isss", $driverId, $title, $message, $type);
+                    $ins->execute();
+                    $ins->close();
                 }
             }
         }
@@ -147,10 +187,10 @@ try {
 
     // Fetch all notifications for driver
     $stmt = $db->prepare("
-        SELECT id, title, message, type, is_read, created_at 
-        FROM driver_notifications 
-        WHERE driver_id = ? 
-        ORDER BY created_at DESC 
+        SELECT id, title, message, type, is_read, created_at
+        FROM driver_notifications
+        WHERE driver_id = ?
+        ORDER BY created_at DESC
         LIMIT 50
     ");
     $stmt->bind_param("i", $driverId);
@@ -159,14 +199,16 @@ try {
 
     $notifications = [];
     while ($row = $result->fetch_assoc()) {
-        $row['id'] = (int)$row['id'];
-        $row['is_read'] = (int)$row['is_read'];
+        // Strip the internal payment ID tag from the displayed message
+        $row['message'] = preg_replace('/\s*\[#PAY-\d+\]/', '', $row['message']);
+        $row['id']       = (int)$row['id'];
+        $row['is_read']  = (int)$row['is_read'];
         $notifications[] = $row;
     }
     $stmt->close();
 
     echo json_encode([
-        'success' => true,
+        'success'      => true,
         'notifications' => $notifications,
         'unread_count' => count(array_filter($notifications, fn($n) => $n['is_read'] === 0))
     ]);
