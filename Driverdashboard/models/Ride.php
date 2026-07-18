@@ -27,6 +27,12 @@ class Ride
                 WHERE rr.driver_id = ? 
                 AND rr.driver_status = 'pending'
                 AND rides.status = 'pending'
+                AND EXISTS (
+                    SELECT 1 FROM subscriptions s
+                    WHERE s.driver_id = rr.driver_id
+                    AND s.status = 'active'
+                    AND s.expires_at > NOW()
+                )
                 ORDER BY rr.id DESC 
                 LIMIT 1
             ");
@@ -224,6 +230,12 @@ class Ride
             $excludeFilter = "AND id NOT IN (" . implode(",", $rejectedDrivers) . ")";
         }
 
+        // Only pick drivers with an active, non-expired subscription
+        $subscriptionFilter = "AND id IN (
+            SELECT driver_id FROM subscriptions
+            WHERE status = 'active' AND expires_at > NOW()
+        )";
+
         $sql = "
             SELECT id,
             (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance
@@ -232,6 +244,7 @@ class Ride
             AND latitude IS NOT NULL
             AND longitude IS NOT NULL
             {$excludeFilter}
+            {$subscriptionFilter}
             {$vehicleFilter}
             ORDER BY distance ASC
             LIMIT 1
