@@ -105,17 +105,21 @@ class Ride
     return $result && $result->num_rows > 0;
   }
 
-  // Helper to get first driver in the database matching vehicle type
+  // Helper to get first driver in the database matching vehicle type + active subscription
   private function getDefaultDriverId($vehicleType = null)
   {
     if ($vehicleType) {
-      $stmt = $this->conn->prepare('
-                SELECT d.id 
-                FROM drivers d 
-                JOIN vehicles v ON d.id = v.driver_id 
-                WHERE LOWER(v.vehicle_type) = LOWER(?) 
+      $stmt = $this->conn->prepare("
+                SELECT d.id
+                FROM drivers d
+                JOIN vehicles v ON d.id = v.driver_id
+                JOIN subscriptions s ON s.driver_id = d.id
+                WHERE LOWER(v.vehicle_type) = LOWER(?)
+                  AND s.status = 'active'
+                  AND s.expires_at > NOW()
+                ORDER BY s.expires_at DESC
                 LIMIT 1
-            ');
+            ");
       if ($stmt) {
         $stmt->bind_param('s', $vehicleType);
         $stmt->execute();
@@ -126,7 +130,14 @@ class Ride
       }
     }
 
-    $result = $this->conn->query('SELECT id FROM drivers LIMIT 1');
+    // Fallback: any subscribed driver (no vehicle filter)
+    $result = $this->conn->query("
+        SELECT d.id FROM drivers d
+        JOIN subscriptions s ON s.driver_id = d.id
+        WHERE s.status = 'active' AND s.expires_at > NOW()
+        ORDER BY s.expires_at DESC
+        LIMIT 1
+    ");
     if ($result && $row = $result->fetch_assoc()) {
       return (int) $row['id'];
     }
@@ -142,6 +153,12 @@ class Ride
         $vehicleFilter = "AND id IN (SELECT driver_id FROM vehicles WHERE LOWER(vehicle_type) = LOWER(?))";
       }
 
+      // Only dispatch to drivers with an active, non-expired subscription
+      $subscriptionFilter = "AND id IN (
+          SELECT driver_id FROM subscriptions
+          WHERE status = 'active' AND expires_at > NOW()
+      )";
+
       $sql = "
           SELECT id,
           (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance
@@ -149,6 +166,7 @@ class Ride
           WHERE status = 'online'
           AND latitude IS NOT NULL
           AND longitude IS NOT NULL
+          {$subscriptionFilter}
           {$vehicleFilter}
           ORDER BY distance ASC
           LIMIT 1
