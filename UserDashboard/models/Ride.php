@@ -2,6 +2,13 @@
 
 class Ride
 {
+  // UML Class Diagram Attributes (Private)
+  private $rideid;
+  private $pickupLocation;
+  private $destination;
+  private $date;
+  private $status;
+
   private $conn;
   private $table = 'rides';
 

@@ -2,6 +2,19 @@
 
 class Driver
 {
+    // UML Class Diagram Attributes (Private)
+    private $id;
+    private $first_name;
+    private $last_name;
+    private $email;
+    private $phone;
+    private $profile_image;
+    private $status;
+    private $current_location;
+    private $license_plate_front;
+    private $license_plate_back;
+    private $created_at;
+
     private $db;
 
     public function __construct($db)
@@ -11,6 +24,7 @@ class Driver
 
     public function getById($driverId)
     {
+        $this->id = (int)$driverId;
         $stmt = $this->db->prepare("
             SELECT 
                 d.id, d.first_name, d.last_name, d.email, d.phone, d.status, d.profile_image, d.created_at,
@@ -19,10 +33,22 @@ class Driver
             LEFT JOIN vehicles v ON d.id = v.driver_id
             WHERE d.id = ?
         ");
-        $stmt->bind_param("i", $driverId);
+        $stmt->bind_param("i", $this->id);
         $stmt->execute();
         $result = $stmt->get_result();
-        return $result->fetch_assoc();
+        $driver = $result->fetch_assoc();
+
+        if ($driver) {
+            $this->first_name = isset($driver['first_name']) ? $driver['first_name'] : '';
+            $this->last_name = isset($driver['last_name']) ? $driver['last_name'] : '';
+            $this->email = isset($driver['email']) ? $driver['email'] : '';
+            $this->phone = isset($driver['phone']) ? $driver['phone'] : '';
+            $this->status = isset($driver['status']) ? $driver['status'] : '';
+            $this->profile_image = isset($driver['profile_image']) ? $driver['profile_image'] : '';
+            $this->created_at = isset($driver['created_at']) ? $driver['created_at'] : '';
+        }
+
+        return $driver;
     }
 
     public function updateStatus($driverId, $status)

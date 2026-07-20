@@ -2,6 +2,12 @@
 
 class Alert
 {
+  // UML Class Diagram Attributes (Protected)
+  protected $alertid;
+  protected $alertType;
+  protected $message;
+  protected $created_at;
+
   private $conn;
   private $table = 'alerts';
 
@@ -43,6 +49,9 @@ class Alert
   // ADD ALERT
   public function addAlert($data)
   {
+    $this->alertType = $data['alert_type'] ?? '';
+    $this->message = $data['message'] ?? '';
+
     $sql = '
             INSERT INTO alerts
             (user_id, driver_id, alert_type, message)
@@ -56,8 +65,8 @@ class Alert
       'iiss',
       $data['user_id'],
       $data['driver_id'],
-      $data['alert_type'],
-      $data['message']
+      $this->alertType,
+      $this->message
     );
 
     return $stmt->execute();
@@ -66,6 +75,8 @@ class Alert
   // RESOLVE ALERT
   public function resolveAlert($id)
   {
+    $this->alertid = (int)$id;
+
     $sql = "
             UPDATE alerts
             SET status='resolved'
@@ -74,7 +85,7 @@ class Alert
 
     $stmt = $this->conn->prepare($sql);
 
-    $stmt->bind_param('i', $id);
+    $stmt->bind_param('i', $this->alertid);
 
     return $stmt->execute();
   }

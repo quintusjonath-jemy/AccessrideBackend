@@ -2,6 +2,17 @@
 
 class Vehicle
 {
+  // UML Class Diagram Attributes (Private)
+  private $id;
+  private $driver_id;
+  private $vehicle_number;
+  private $vehicle_type;
+  private $vehicle_outside_image;
+  private $vehicle_inside_image;
+  private $insurance_card_front_image;
+  private $insurance_card_back_image;
+  private $vehicle_book_url;
+
   private $conn;
   private $table = 'vehicles';
 
@@ -41,6 +52,16 @@ class Vehicle
       // Format properties
       $row['id'] = (int) $row['id'];
       $row['driver_id'] = (int) $row['driver_id'];
+
+      $this->id = $row['id'];
+      $this->driver_id = $row['driver_id'];
+      $this->vehicle_number = isset($row['vehicle_registration_number']) ? $row['vehicle_registration_number'] : '';
+      $this->vehicle_type = isset($row['vehicle_type']) ? $row['vehicle_type'] : '';
+      $this->vehicle_outside_image = isset($row['vehicle_outside_image']) ? $row['vehicle_outside_image'] : '';
+      $this->vehicle_inside_image = isset($row['vehicle_inside_image']) ? $row['vehicle_inside_image'] : '';
+      $this->insurance_card_front_image = isset($row['insurance_card_front_image']) ? $row['insurance_card_front_image'] : '';
+      $this->insurance_card_back_image = isset($row['insurance_card_back_image']) ? $row['insurance_card_back_image'] : '';
+      $this->vehicle_book_url = isset($row['vehicle_book_url']) ? $row['vehicle_book_url'] : '';
 
       return $row;
     }

@@ -2,6 +2,14 @@
 
 class Notification {
 
+    // UML Class Diagram Attributes (Private)
+    private $id;
+    private $admin_id;
+    private $type;
+    private $message;
+    private $is_read;
+    private $created_at;
+
     private $conn;
     private $table = "admin_notifications";
 

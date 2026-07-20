@@ -1,6 +1,15 @@
 <?php
 class RideRequest
 {
+  // UML Class Diagram Attributes (Private)
+  private $id;
+  private $passenger_id;
+  private $driver_id;
+  private $ride_id;
+  private $user_status;
+  private $driver_status;
+  private $request_time;
+
   private $conn;
   private $table = 'ride_requests';
 
@@ -12,12 +21,18 @@ class RideRequest
   // Create a new ride request
   public function createRequest($userId, $driverId, $rideId)
   {
-    $sql = "INSERT INTO {$this->table} (user_id, driver_id, ride_id, user_status, driver_status) VALUES (?, ?, ?, 'pending', 'pending')";
+    $this->passenger_id = $userId;
+    $this->driver_id = $driverId;
+    $this->ride_id = $rideId;
+    $this->user_status = 'pending';
+    $this->driver_status = 'pending';
+
+    $sql = "INSERT INTO {$this->table} (user_id, driver_id, ride_id, user_status, driver_status) VALUES (?, ?, ?, ?, ?)";
     $stmt = $this->conn->prepare($sql);
     if (!$stmt) {
       return false;
     }
-    $stmt->bind_param("iii", $userId, $driverId, $rideId);
+    $stmt->bind_param("iiiss", $this->passenger_id, $this->driver_id, $this->ride_id, $this->user_status, $this->driver_status);
     return $stmt->execute();
   }
 

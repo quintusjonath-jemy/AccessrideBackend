@@ -1,6 +1,16 @@
 <?php
 
 class Payment {
+    // UML Class Diagram Attributes (Private)
+    private $id;
+    private $ride_id;
+    private $driver_id;
+    private $passenger_id;
+    private $amount;
+    private $payment_method;
+    private $status;
+    private $created_at;
+
     private $conn;
     private $table = "payments";
 

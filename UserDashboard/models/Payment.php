@@ -2,6 +2,16 @@
 
 class Payment
 {
+  // UML Class Diagram Attributes (Private)
+  private $id;
+  private $ride_id;
+  private $driver_id;
+  private $passenger_id;
+  private $amount;
+  private $payment_method;
+  private $status;
+  private $created_at;
+
   private $conn;
   private $table = 'payments';
 
@@ -31,13 +41,20 @@ class Payment
       }
     }
 
+    $this->ride_id = $rideId;
+    $this->passenger_id = $userId;
+    $this->driver_id = $driverId;
+    $this->amount = $amount;
+    $this->payment_method = $paymentMethod;
+    $this->status = $status;
+
     $query = "INSERT INTO {$this->table} (ride_id, user_id, driver_id, amount, payment_method, status) VALUES (?, ?, ?, ?, ?, ?)";
     $stmt = $this->conn->prepare($query);
     if (!$stmt) {
       return false;
     }
 
-    $stmt->bind_param('iiidss', $rideId, $userId, $driverId, $amount, $paymentMethod, $status);
+    $stmt->bind_param('iiidss', $this->ride_id, $this->passenger_id, $this->driver_id, $this->amount, $this->payment_method, $this->status);
     return $stmt->execute();
   }
 
