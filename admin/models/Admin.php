@@ -2,6 +2,15 @@
 
 class Admin {
 
+    // UML Class Diagram Attributes (Private)
+    private $id;
+    private $name;
+    private $email;
+    private $phone;
+    private $profile_image;
+    private $password;
+    private $created_at;
+
     private $conn;
     private $table = "admins";
 
@@ -10,25 +19,35 @@ class Admin {
     }
 
     // GET ADMIN
-
     public function getAdmin($id) {
-
+        $this->id = (int)$id;
         $stmt = $this->conn->prepare(
             "SELECT * FROM admins WHERE id=?"
         );
 
-        $stmt->bind_param("i", $id);
-
+        $stmt->bind_param("i", $this->id);
         $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
 
-        return $stmt
-            ->get_result()
-            ->fetch_assoc();
+        if ($row) {
+            $this->name = $row['name'] ?? null;
+            $this->email = $row['email'] ?? null;
+            $this->phone = $row['phone'] ?? null;
+            $this->profile_image = $row['profile_image'] ?? null;
+            $this->password = $row['password'] ?? null;
+            $this->created_at = $row['created_at'] ?? null;
+        }
+
+        return $row;
     }
 
     // UPDATE PROFILE
-
     public function updateProfile($data) {
+        $this->id = (int)($data['id'] ?? 0);
+        $this->name = $data['name'] ?? '';
+        $this->email = $data['email'] ?? '';
+        $this->phone = $data['phone'] ?? '';
+        $this->profile_image = $data['profile_image'] ?? '';
 
         $sql = "
             UPDATE admins
@@ -41,14 +60,13 @@ class Admin {
         ";
 
         $stmt = $this->conn->prepare($sql);
-
         $stmt->bind_param(
             "ssssi",
-            $data['name'],
-            $data['email'],
-            $data['phone'],
-            $data['profile_image'],
-            $data['id']
+            $this->name,
+            $this->email,
+            $this->phone,
+            $this->profile_image,
+            $this->id
         );
 
         return $stmt->execute();
@@ -56,6 +74,7 @@ class Admin {
 
     // CHANGE PASSWORD
     public function updatePassword($data) {
+        $this->id = (int)($data['id'] ?? 0);
 
         $stmt = $this->conn->prepare(
             "SELECT password
@@ -65,7 +84,7 @@ class Admin {
 
         $stmt->bind_param(
             "i",
-            $data['id']
+            $this->id
         );
 
         $stmt->execute();
@@ -75,6 +94,7 @@ class Admin {
             ->fetch_assoc();
 
         if (
+            !$admin ||
             !password_verify(
                 $data['current_password'],
                 $admin['password']
@@ -83,24 +103,24 @@ class Admin {
             return false;
         }
 
-        $newPassword = password_hash(
+        $this->password = password_hash(
             $data['new_password'],
             PASSWORD_DEFAULT
         );
 
-        $stmt = $this->conn->prepare(
+        $updateStmt = $this->conn->prepare(
             "UPDATE admins
             SET password=?
             WHERE id=?"
         );
 
-        $stmt->bind_param(
+        $updateStmt->bind_param(
             "si",
-            $newPassword,
-            $data['id']
+            $this->password,
+            $this->id
         );
 
-        return $stmt->execute();
+        return $updateStmt->execute();
     }
     // GET NOTIFICATION SETTINGS
     public function getNotifications($id) {

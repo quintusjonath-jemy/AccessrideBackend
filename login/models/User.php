@@ -19,6 +19,12 @@ class User {
         }
 
         try {
+            $user = new self();
+            $user->first_name = isset($data['firstName']) ? $data['firstName'] : '';
+            $user->last_name = isset($data['lastName']) ? $data['lastName'] : '';
+            $user->email = isset($data['email']) ? $data['email'] : '';
+            $user->phone = isset($data['phone']) ? $data['phone'] : '';
+
             $pdo = self::getConnection();
             $pdo->beginTransaction();
 
@@ -27,14 +33,15 @@ class User {
             );
 
             $stmt->execute([
-                ':first_name' => isset($data['firstName']) ? $data['firstName'] : '',
-                ':last_name' => isset($data['lastName']) ? $data['lastName'] : '',
-                ':email' => isset($data['email']) ? $data['email'] : '',
-                ':phone' => isset($data['phone']) ? $data['phone'] : '',
+                ':first_name' => $user->first_name,
+                ':last_name' => $user->last_name,
+                ':email' => $user->email,
+                ':phone' => $user->phone,
                 ':password_hash' => password_hash(isset($data['password']) ? $data['password'] : '', PASSWORD_DEFAULT)
             ]);
 
             $userId = $pdo->lastInsertId();
+            $user->id = $userId;
 
             if (!empty($data['guardianName']) && !empty($data['guardianNumber'])) {
                 $stmtGuardian = $pdo->prepare(

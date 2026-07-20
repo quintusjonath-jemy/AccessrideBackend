@@ -2,6 +2,17 @@
 
 class User {
 
+    // UML Class Diagram Attributes (Private)
+    private $id;
+    private $first_name;
+    private $last_name;
+    private $email;
+    private $phone;
+    private $profile_image;
+    private $status;
+    private $location;
+    private $created_at;
+
     private $conn;
     private $table = "users";
 
@@ -26,23 +37,26 @@ class User {
 
     // ADD USER
     public function addUser($data) {
+        $parts = explode(' ', trim($data['name']), 2);
+        $this->first_name = $parts[0];
+        $this->last_name = isset($parts[1]) ? $parts[1] : '';
+        $this->email = isset($data['email']) ? $data['email'] : '';
+        $this->status = isset($data['status']) ? $data['status'] : 'active';
+        $this->location = isset($data['location']) ? $data['location'] : '';
+
         $sql = "INSERT INTO users
                 (first_name, last_name, email, status, location)
                 VALUES (?, ?, ?, ?, ?)";
-
-        $parts = explode(' ', trim($data['name']), 2);
-        $first_name = $parts[0];
-        $last_name = isset($parts[1]) ? $parts[1] : '';
 
         $stmt = $this->conn->prepare($sql);
 
         $stmt->bind_param(
             "sssss",
-            $first_name,
-            $last_name,
-            $data['email'],
-            $data['status'],
-            $data['location']
+            $this->first_name,
+            $this->last_name,
+            $this->email,
+            $this->status,
+            $this->location
         );
 
         return $stmt->execute();
@@ -50,13 +64,29 @@ class User {
 
     // UPDATE USER
     public function updateUser($data) {
+        $this->id = (int)$data['id'];
+        $parts = explode(' ', trim($data['name']), 2);
+        $this->first_name = $parts[0];
+        $this->last_name = isset($parts[1]) ? $parts[1] : '';
+        $this->email = isset($data['email']) ? $data['email'] : '';
+        $this->status = isset($data['status']) ? $data['status'] : 'active';
+        $this->location = isset($data['location']) ? $data['location'] : '';
+
         $sql = "UPDATE users
                 SET first_name=?, last_name=?, email=?, status=?, location=?
                 WHERE id=?";
 
-        $parts = explode(' ', trim($data['name']), 2);
-        $first_name = $parts[0];
-        $last_name = isset($parts[1]) ? $parts[1] : '';
+        $stmt = $this->conn->prepare($sql);
+
+        $stmt->bind_param(
+            "sssssi",
+            $this->first_name,
+            $this->last_name,
+            $this->email,
+            $this->status,
+            $this->location,
+            $this->id
+        );
 
         $stmt = $this->conn->prepare($sql);
 

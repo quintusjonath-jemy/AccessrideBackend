@@ -4,6 +4,14 @@ require_once __DIR__ . '/../config/config.php';
 
 class Admin
 {
+    // UML Class Diagram Attributes (Private)
+    private $id;
+    private $name;
+    private $email;
+    private $phone;
+    private $profile_image;
+    private $password;
+    private $created_at;
     private static function getConnection()
     {
         $dsn = sprintf(

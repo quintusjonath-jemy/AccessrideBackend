@@ -2,6 +2,11 @@
 
 class Subscription
 {
+  // UML Class Diagram Attributes (Private)
+  private $subscriptionid;
+  private $plan;
+  private $expiryDate;
+
   private $conn;
   private $table = 'subscriptions';
 
@@ -43,6 +48,10 @@ class Subscription
       $row['id'] = (int) $row['id'];
       $row['driver_id'] = (int) $row['driver_id'];
       $row['amount'] = (float) $row['amount'];
+
+      $this->subscriptionid = $row['id'];
+      $this->plan = isset($row['status']) ? $row['status'] : 'active';
+      $this->expiryDate = isset($row['expires_at']) ? $row['expires_at'] : '';
 
       return $row;
     }

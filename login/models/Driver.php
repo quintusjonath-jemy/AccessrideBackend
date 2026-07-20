@@ -4,6 +4,18 @@ require_once __DIR__ . '/../config/config.php';
 
 class Driver
 {
+    // UML Class Diagram Attributes (Private)
+    private $id;
+    private $first_name;
+    private $last_name;
+    private $email;
+    private $phone;
+    private $profile_image;
+    private $status;
+    private $current_location;
+    private $license_plate_front;
+    private $license_plate_back;
+    private $created_at;
 
     private static function getConnection()
     {

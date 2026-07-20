@@ -2,6 +2,17 @@
 
 class User
 {
+  // UML Class Diagram Attributes (Private)
+  private $id;
+  private $first_name;
+  private $last_name;
+  private $email;
+  private $phone;
+  private $profile_image;
+  private $status;
+  private $location;
+  private $created_at;
+
   private $conn;
   private $table = 'users';
 

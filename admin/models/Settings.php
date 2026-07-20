@@ -3,6 +3,9 @@ include_once __DIR__ . '/../config/Encryption.php';
 
 class Settings
 {
+  // UML Class Diagram Attributes (Public)
+  public $settingid;
+
   private $conn;
   private $table = 'settings';
 
@@ -55,6 +58,7 @@ class Settings
 
       // Format properties
       $row['id'] = (int) $row['id'];
+      $this->settingid = $row['id'];
       $row['admin_id'] = (int) $row['admin_id'];
       $row['sos_alert'] = (int) $row['sos_alert'];
       $row['ride_alert'] = (int) $row['ride_alert'];
