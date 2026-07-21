@@ -13,7 +13,7 @@ class Notification
   private $created_at;
 
   private $conn;
-  private $table = 'notifications';
+  private $table = 'user_notifications';
 
   public function __construct($db)
   {
