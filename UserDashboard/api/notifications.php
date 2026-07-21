@@ -21,6 +21,21 @@ require_once __DIR__ . '/../config/Database.php';
 
 try {
   $db = (new Database())->connect();
+
+  // Auto-create user_notifications table if it doesn't exist (same as driver_notifications)
+  $db->query("
+    CREATE TABLE IF NOT EXISTS user_notifications (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      title VARCHAR(120) NOT NULL,
+      message TEXT NOT NULL,
+      type ENUM('info','success','warning','ride','payment','system') DEFAULT 'info',
+      is_read TINYINT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  ");
+
   $method = $_SERVER['REQUEST_METHOD'];
 
   // GET ALL NOTIFICATIONS FOR USER
@@ -32,7 +47,7 @@ try {
     }
     $userId = (int)$_GET['user_id'];
 
-    $stmt = $db->prepare("SELECT id, title, message, is_read, created_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC");
+    $stmt = $db->prepare("SELECT id, title, message, is_read, created_at FROM user_notifications WHERE user_id = ? ORDER BY created_at DESC");
     $stmt->bind_param('i', $userId);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -63,7 +78,7 @@ try {
       }
       $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : (int)$data['user_id'];
       
-      $stmt = $db->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ?");
+      $stmt = $db->prepare("UPDATE user_notifications SET is_read = 1 WHERE user_id = ?");
       $stmt->bind_param('i', $userId);
       if ($stmt->execute()) {
         echo json_encode(['success' => true, 'message' => 'All notifications marked as read']);
@@ -80,7 +95,7 @@ try {
         exit;
       }
 
-      $stmt = $db->prepare("UPDATE notifications SET is_read = 1 WHERE id = ?");
+      $stmt = $db->prepare("UPDATE user_notifications SET is_read = 1 WHERE id = ?");
       $stmt->bind_param('i', $id);
       if ($stmt->execute()) {
         echo json_encode(['success' => true, 'message' => 'Notification marked as read']);
@@ -98,7 +113,7 @@ try {
       exit;
     }
 
-    $stmt = $db->prepare("DELETE FROM notifications WHERE id = ?");
+    $stmt = $db->prepare("DELETE FROM user_notifications WHERE id = ?");
     $stmt->bind_param('i', $id);
     if ($stmt->execute()) {
       echo json_encode(['success' => true, 'message' => 'Notification deleted successfully']);

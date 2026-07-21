@@ -15,6 +15,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/../config/Database.php';
 
+// Helper: insert a row into user_notifications
+function insertUserNotification($db, $userId, $title, $message, $type = 'info') {
+  $stmt = $db->prepare("INSERT INTO user_notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)");
+  if ($stmt) {
+    $stmt->bind_param('isss', $userId, $title, $message, $type);
+    $stmt->execute();
+    $stmt->close();
+  }
+}
+
 try {
   $data = json_decode(file_get_contents('php://input'), true);
   if (!$data || empty($data['ride_id']) || !isset($data['rating'])) {
@@ -24,7 +34,8 @@ try {
   }
 
   $rideId = (int)$data['ride_id'];
-  $rating = (int)$data['rating'];
+  $rating  = (int)$data['rating'];
+  $userId  = isset($data['user_id']) ? (int)$data['user_id'] : 0;
 
   if ($rating < 1 || $rating > 5) {
     http_response_code(400);
@@ -73,6 +84,17 @@ try {
         $stmt_update_driver->bind_param('di', $avgRating, $driverId);
         $stmt_update_driver->execute();
       }
+    }
+
+    // Notify the user their rating was submitted
+    if ($userId > 0) {
+      insertUserNotification(
+        $db,
+        $userId,
+        'Rating Submitted',
+        "You gave a {$rating}-star rating for your ride. Thank you for your feedback!",
+        'success'
+      );
     }
 
     echo json_encode(['success' => true, 'message' => 'Rating submitted successfully']);

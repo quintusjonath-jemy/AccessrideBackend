@@ -24,6 +24,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 require_once __DIR__ . '/../config/Database.php';
 
+// Helper: insert a row into user_notifications
+function insertUserNotification($db, $userId, $title, $message, $type = 'info') {
+  $stmt = $db->prepare("INSERT INTO user_notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)");
+  if ($stmt) {
+    $stmt->bind_param('isss', $userId, $title, $message, $type);
+    $stmt->execute();
+    $stmt->close();
+  }
+}
+
 try {
   $data = json_decode(file_get_contents('php://input'), true);
   if (!$data || empty($data['ride_id'])) {
@@ -36,6 +46,7 @@ try {
   }
 
   $rideId = (int) $data['ride_id'];
+  $userId  = isset($data['user_id']) ? (int) $data['user_id'] : 0;
   $db = (new Database())->connect();
 
   // Cancel the ride request if exists
@@ -49,6 +60,16 @@ try {
 
   $stmt->bind_param('i', $rideId);
   if ($stmt->execute()) {
+    // Notify the user their ride was cancelled
+    if ($userId > 0) {
+      insertUserNotification(
+        $db,
+        $userId,
+        'Ride Cancelled',
+        'Your ride has been cancelled successfully.',
+        'warning'
+      );
+    }
     echo json_encode([
       'success' => true,
       'message' => 'Ride cancelled and deleted successfully'

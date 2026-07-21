@@ -28,6 +28,16 @@ require_once __DIR__ . '/../models/Ride.php';
 require_once __DIR__ . '/../models/Payment.php';
 require_once __DIR__ . '/../models/RideRequest.php';
 
+// Helper: insert a row into user_notifications
+function insertUserNotification($db, $userId, $title, $message, $type = 'info') {
+  $stmt = $db->prepare("INSERT INTO user_notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)");
+  if ($stmt) {
+    $stmt->bind_param('isss', $userId, $title, $message, $type);
+    $stmt->execute();
+    $stmt->close();
+  }
+}
+
 try {
   $data = json_decode(file_get_contents('php://input'), true);
   if (!$data) {
@@ -115,6 +125,15 @@ try {
 
     // Insert into ride_requests table
     $rideRequestModel->createRequest($userId, $driverId, $rideId);
+
+    // Notify the user that their ride was booked
+    insertUserNotification(
+      $db,
+      $userId,
+      'Ride Booked',
+      "Your ride from {$pickup} to {$dropoff} has been booked. Fare: LKR " . number_format($fare, 2) . ". Status: Pending.",
+      'ride'
+    );
 
     echo json_encode([
       'success' => true,
