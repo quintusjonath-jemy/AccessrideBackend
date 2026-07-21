@@ -158,11 +158,41 @@ class Ride
         $stmt2->bind_param("ii", $rideId, $driverId);
         $res2 = $stmt2->execute();
 
+        // 3. Notify the passenger that their ride was accepted
+        if ($res1 && $res2) {
+            $stmtUser = $this->db->prepare("SELECT user_id FROM rides WHERE id = ?");
+            $stmtUser->bind_param("i", $rideId);
+            $stmtUser->execute();
+            $row = $stmtUser->get_result()->fetch_assoc();
+            if ($row && !empty($row['user_id'])) {
+                $userId = (int)$row['user_id'];
+                $stmtNotif = $this->db->prepare("INSERT INTO user_notifications (user_id, title, message, type) VALUES (?, 'Driver Accepted', 'A driver has accepted your ride request and is on the way to your pickup location.', 'ride')");
+                $stmtNotif->bind_param("i", $userId);
+                $stmtNotif->execute();
+                $stmtNotif->close();
+            }
+            $stmtUser->close();
+        }
+
         return $res1 && $res2;
     }
 
     public function cancelRide($rideId)
     {
+        // Notify the passenger before cancelling
+        $stmtUser = $this->db->prepare("SELECT user_id FROM rides WHERE id = ?");
+        $stmtUser->bind_param("i", $rideId);
+        $stmtUser->execute();
+        $row = $stmtUser->get_result()->fetch_assoc();
+        if ($row && !empty($row['user_id'])) {
+            $userId = (int)$row['user_id'];
+            $stmtNotif = $this->db->prepare("INSERT INTO user_notifications (user_id, title, message, type) VALUES (?, 'Ride Cancelled by Driver', 'Unfortunately your driver has cancelled this ride. A new driver will be assigned shortly.', 'warning')");
+            $stmtNotif->bind_param("i", $userId);
+            $stmtNotif->execute();
+            $stmtNotif->close();
+        }
+        $stmtUser->close();
+
         $stmt = $this->db->prepare("UPDATE rides SET status = 'cancelled' WHERE id = ?");
         $stmt->bind_param("i", $rideId);
         return $stmt->execute();
