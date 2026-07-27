@@ -1,7 +1,11 @@
 <?php
+if (getenv('APP_ENV') === 'development') {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+}
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+
+
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
