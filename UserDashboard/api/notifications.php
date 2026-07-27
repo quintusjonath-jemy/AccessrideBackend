@@ -1,7 +1,11 @@
 <?php
+if (getenv('APP_ENV') === 'development') {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+}
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+
+
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -35,6 +39,12 @@ try {
       INDEX (user_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   ");
+
+  // Auto-migration: add `type` column if the table was renamed from old `notifications` table
+  $colCheck = $db->query("SHOW COLUMNS FROM user_notifications LIKE 'type'");
+  if ($colCheck && $colCheck->num_rows === 0) {
+    $db->query("ALTER TABLE user_notifications ADD COLUMN type ENUM('info','success','warning','ride','payment','system') DEFAULT 'info' AFTER message");
+  }
 
   $method = $_SERVER['REQUEST_METHOD'];
 
