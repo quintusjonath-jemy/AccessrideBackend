@@ -222,25 +222,28 @@ class Ride
         // 3. Geocode pickup location name using Mapbox geocoding
         $lat = null;
         $lng = null;
-        $mapboxToken = "pk.eyJ1IjoiYWNjZXNzcmlkZSIsImEiOiJjbHp0bDg3bXMwMDAwMnJwNHR4ZTU0MmIyIn0.demo";
-        $url = "https://api.mapbox.com/geocoding/v5/mapbox.places/" . urlencode($pickup) . ".json?access_token=" . $mapboxToken . "&limit=1";
-        
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        $response = curl_exec($ch);
-        curl_close($ch);
+        $mapboxToken = getenv('MAPBOX_TOKEN') ?: '';
 
-        if ($response) {
-            $data = json_decode($response, true);
-            if (!empty($data['features'][0]['geometry']['coordinates'])) {
-                $lng = $data['features'][0]['geometry']['coordinates'][0];
-                $lat = $data['features'][0]['geometry']['coordinates'][1];
+        if (!empty($mapboxToken)) {
+            $url = "https://api.mapbox.com/geocoding/v5/mapbox.places/" . urlencode($pickup) . ".json?access_token=" . $mapboxToken . "&limit=1";
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            $response = curl_exec($ch);
+            curl_close($ch);
+
+            if ($response) {
+                $data = json_decode($response, true);
+                if (!empty($data['features'][0]['geometry']['coordinates'])) {
+                    $lng = $data['features'][0]['geometry']['coordinates'][0];
+                    $lat = $data['features'][0]['geometry']['coordinates'][1];
+                }
             }
-        }
+        } // end if (!empty($mapboxToken))
 
-        // If geocoding failed, default to Colombo center
+        // If geocoding failed or token missing, default to Colombo center
         if ($lat === null || $lng === null) {
             $lat = 6.9271;
             $lng = 79.8612;
