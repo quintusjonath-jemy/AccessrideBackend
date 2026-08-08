@@ -105,10 +105,10 @@ class UserController
 
         $user = User::findByEmail($email);
 
-        // Verify password
-        if (!password_verify($password, $user['password_hash'])) {
+        // Verify user exists and password is valid
+        if (!$user || !password_verify($password, $user['password_hash'])) {
             http_response_code(401);
-            echo json_encode(['error' => 'Incorrect password.']);
+            echo json_encode(['error' => 'Username or password invalid']);
             return;
         }
 
