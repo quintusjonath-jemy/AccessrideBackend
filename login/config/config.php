@@ -2,14 +2,16 @@
 // Minimal config for Google OAuth backend
 session_start();
 
-// Allowed frontend origins (same whitelist as voiceassistant/security.php)
-$allowedOrigins = [
+// Allowed frontend origins (dynamically supports FRONTEND_BASE env)
+$envFrontend = getenv('FRONTEND_BASE') ?: ($_ENV['FRONTEND_BASE'] ?? '');
+$allowedOrigins = array_filter([
+    $envFrontend,
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost',
     'http://127.0.0.1',
     'http://127.0.0.1:5173',
-];
+]);
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (in_array($origin, $allowedOrigins, true)) {
