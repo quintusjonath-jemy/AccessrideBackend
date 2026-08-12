@@ -37,7 +37,7 @@ try {
     $md5sig = $_POST['md5sig'] ?? '';
     $payment_id = $_POST['payment_id'] ?? '';
 
-    $merchant_secret = getenv('PAYHERE_SECRET') ?: 'Mjg1MzE1MjY5MTI3ODE1NzU2NzAyNDA1Nzc1MTMzMjMwOTQwNzMxMg==';
+    $merchant_secret = getenv('PAYHERE_SECRET') ?: ($_ENV['PAYHERE_SECRET'] ?? '');
 
     // Verify signature
     $local_md5sig = strtoupper(
