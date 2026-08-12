@@ -27,15 +27,13 @@ class Security
     public static function corsHeaders(array $methods = ['GET', 'POST', 'OPTIONS']): void
     {
         $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        $envFrontend = getenv('FRONTEND_BASE') ?: ($_ENV['FRONTEND_BASE'] ?? '');
+        $allowed = array_filter(array_merge([$envFrontend], self::$allowedOrigins));
 
-        if (in_array($origin, self::$allowedOrigins, true)) {
+        if (!empty($origin) && in_array($origin, $allowed, true)) {
             header("Access-Control-Allow-Origin: {$origin}");
-        } else {
-            // For same-origin Apache requests (no Origin header) allow through
-            if (empty($origin)) {
-                header('Access-Control-Allow-Origin: http://localhost');
-            }
-            // Unknown origins: set nothing → browser will block cross-origin request
+        } elseif (empty($origin)) {
+            header('Access-Control-Allow-Origin: http://localhost');
         }
 
         $methodStr = implode(', ', $methods);

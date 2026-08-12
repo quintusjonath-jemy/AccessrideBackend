@@ -77,9 +77,9 @@ try {
     // Generate unique order ID containing driver ID
     $order_id = "SUB_" . $driverId . "_" . time();
 
-    // PayHere parameters
-    $merchant_id = getenv('PAYHERE_MERCHANT_ID') ?: '1224400';
-    $merchant_secret = getenv('PAYHERE_SECRET') ?: 'Mjg1MzE1MjY5MTI3ODE1NzU2NzAyNDA1Nzc1MTMzMjMwOTQwNzMxMg==';
+    // PayHere parameters from environment variables
+    $merchant_id = getenv('PAYHERE_MERCHANT_ID') ?: ($_ENV['PAYHERE_MERCHANT_ID'] ?? '');
+    $merchant_secret = getenv('PAYHERE_SECRET') ?: ($_ENV['PAYHERE_SECRET'] ?? '');
     $isSandbox = filter_var(getenv('PAYHERE_SANDBOX') ?: 'true', FILTER_VALIDATE_BOOLEAN);
 
     // Secure Hash Generation (Standard PayHere Algorithm)
@@ -101,14 +101,18 @@ try {
     $address = ($driver['town'] ?: ($driver['district'] ?: 'Colombo')) . ", Sri Lanka";
     $city = $driver['town'] ?: 'Colombo';
 
+    // Application base URLs for PayHere return & IPN callback
+    $backendBase = rtrim(getenv('BACKEND_BASE') ?: ($_ENV['BACKEND_BASE'] ?? 'http://localhost'), '/');
+    $frontendBase = rtrim(getenv('FRONTEND_BASE') ?: ($_ENV['FRONTEND_BASE'] ?? 'http://localhost:5173'), '/');
+
     echo json_encode([
         'success' => true,
         'payhere_config' => [
             'sandbox' => $isSandbox,
             'merchant_id' => $merchant_id,
-            'return_url' => 'http://localhost:5173/driver-dashboard',
-            'cancel_url' => 'http://localhost:5173/driver-dashboard',
-            'notify_url' => 'http://localhost/Driverdashboard/api/payhere_notify.php',
+            'return_url' => $frontendBase . '/driver-dashboard',
+            'cancel_url' => $frontendBase . '/driver-dashboard',
+            'notify_url' => $backendBase . '/Driverdashboard/api/payhere_notify.php',
             'order_id' => $order_id,
             'items' => 'AccessRide Driver Subscription',
             'amount' => $amount_formatted,
