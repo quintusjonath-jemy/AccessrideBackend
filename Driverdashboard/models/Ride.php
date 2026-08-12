@@ -223,9 +223,10 @@ class Ride
         $lat = null;
         $lng = null;
         $mapboxToken = getenv('MAPBOX_TOKEN') ?: '';
+        $mapboxApiUrl = getenv('MAPBOX_API_URL') ?: 'https://api.mapbox.com';
 
         if (!empty($mapboxToken)) {
-            $url = "https://api.mapbox.com/geocoding/v5/mapbox.places/" . urlencode($pickup) . ".json?access_token=" . $mapboxToken . "&limit=1";
+            $url = rtrim($mapboxApiUrl, '/') . "/geocoding/v5/mapbox.places/" . urlencode($pickup) . ".json?access_token=" . $mapboxToken . "&limit=1";
 
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $url);
