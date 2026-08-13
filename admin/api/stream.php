@@ -30,6 +30,7 @@ include_once '../config/Database.php';
 include_once '../models/Alert.php';
 include_once '../models/Ride.php';
 include_once '../models/User.php';
+include_once '../models/Driver.php';
 
 $database = new Database();
 $db = $database->connect();
@@ -42,12 +43,14 @@ if (!$db) {
 $alertModel = new Alert($db);
 $rideModel = new Ride($db);
 $userModel = new User($db);
+$driverModel = new Driver($db);
 
 $type = isset($_GET['type']) ? $_GET['type'] : 'all';
 
 $lastAlertHash = '';
 $lastRideHash = '';
 $lastUserHash = '';
+$lastDriverHash = '';
 $lastStatsHash = '';
 
 // Run infinite loop for SSE stream
@@ -84,6 +87,21 @@ while (true) {
       }
       echo 'data: ' . $ridesJson . "\n\n";
       $lastRideHash = $ridesHash;
+    }
+  }
+
+  // Stream Drivers
+  if ($type === 'drivers' || $type === 'all') {
+    $drivers = $driverModel->getDrivers();
+    $driversJson = json_encode($drivers);
+    $driversHash = md5($driversJson);
+
+    if ($driversHash !== $lastDriverHash) {
+      if ($type === 'all') {
+        echo "event: drivers\n";
+      }
+      echo 'data: ' . $driversJson . "\n\n";
+      $lastDriverHash = $driversHash;
     }
   }
 
