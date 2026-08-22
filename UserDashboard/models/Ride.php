@@ -1,0 +1,266 @@
+<?php
+
+class Ride
+{
+  // UML Class Diagram Attributes (Private)
+  private $rideid;
+  private $pickupLocation;
+  private $destination;
+  private $date;
+  private $status;
+
+  private $conn;
+  private $table = 'rides';
+
+  public function __construct($db)
+  {
+    $this->conn = $db;
+  }
+
+  public function getTotalRides($userId)
+  {
+    $stmt = $this->conn->prepare(
+      'SELECT COUNT(*) AS total
+             FROM rides
+             WHERE user_id = ?'
+    );
+
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+
+    return $result->fetch_assoc();
+  }
+
+  public function getCompletedRides($userId)
+  {
+    $stmt = $this->conn->prepare(
+      "SELECT COUNT(*) AS total
+             FROM rides
+             WHERE user_id = ?
+             AND status = 'completed'"
+    );
+
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+
+    return $result->fetch_assoc();
+  }
+
+  public function getPendingRides($userId)
+  {
+    $stmt = $this->conn->prepare(
+      "SELECT COUNT(*) AS total
+             FROM rides
+             WHERE user_id = ?
+             AND status = 'pending'"
+    );
+
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+
+    return $result->fetch_assoc();
+  }
+
+  public function getUpcomingRide($userId)
+  {
+    $stmt = $this->conn->prepare(
+      "SELECT *
+            FROM rides
+            WHERE user_id = ?
+            AND ride_date >= NOW()
+            AND status IN ('pending','accepted')
+            ORDER BY ride_date ASC
+            LIMIT 1"
+    );
+
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+
+    return $result->fetch_assoc();
+  }
+
+  public function getRecentRides($userId)
+  {
+    $stmt = $this->conn->prepare(
+      'SELECT *
+             FROM rides
+             WHERE user_id = ?
+             ORDER BY ride_date DESC
+             LIMIT 5'
+    );
+
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+
+    return $result->fetch_all(MYSQLI_ASSOC);
+  }
+
+  // Helper to check if a column exists in the rides table dynamically
+  private function hasColumn($column)
+  {
+    $result = $this->conn->query("SHOW COLUMNS FROM {$this->table} LIKE '{$column}'");
+    return $result && $result->num_rows > 0;
+  }
+
+  // Helper to get first driver in the database matching vehicle type + active subscription
+  private function getDefaultDriverId($vehicleType = null)
+  {
+    if ($vehicleType) {
+      $stmt = $this->conn->prepare("
+                SELECT d.id
+                FROM drivers d
+                JOIN vehicles v ON d.id = v.driver_id
+                JOIN subscriptions s ON s.driver_id = d.id
+                WHERE LOWER(v.vehicle_type) = LOWER(?)
+                  AND s.status = 'active'
+                  AND s.expires_at > NOW()
+                ORDER BY s.expires_at DESC
+                LIMIT 1
+            ");
+      if ($stmt) {
+        $stmt->bind_param('s', $vehicleType);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result && $row = $result->fetch_assoc()) {
+          return (int) $row['id'];
+        }
+      }
+    }
+
+    // Fallback: any subscribed driver (no vehicle filter)
+    $result = $this->conn->query("
+        SELECT d.id FROM drivers d
+        JOIN subscriptions s ON s.driver_id = d.id
+        WHERE s.status = 'active' AND s.expires_at > NOW()
+        ORDER BY s.expires_at DESC
+        LIMIT 1
+    ");
+    if ($result && $row = $result->fetch_assoc()) {
+      return (int) $row['id'];
+    }
+    return null;
+  }
+
+  // Helper to calculate the nearest driver using Haversine formula
+  public function getNearestDriverId($lat, $lng, $vehicleType = null)
+  {
+    if ($lat !== null && $lng !== null) {
+      $vehicleFilter = "";
+      if ($vehicleType) {
+        $vehicleFilter = "AND id IN (SELECT driver_id FROM vehicles WHERE LOWER(vehicle_type) = LOWER(?))";
+      }
+
+      // Only dispatch to drivers with an active, non-expired subscription
+      $subscriptionFilter = "AND id IN (
+          SELECT driver_id FROM subscriptions
+          WHERE status = 'active' AND expires_at > NOW()
+      )";
+
+      $sql = "
+          SELECT id,
+          (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance
+          FROM drivers
+          WHERE status = 'online'
+          AND latitude IS NOT NULL
+          AND longitude IS NOT NULL
+          {$subscriptionFilter}
+          {$vehicleFilter}
+          ORDER BY distance ASC
+          LIMIT 1
+      ";
+
+      $stmt = $this->conn->prepare($sql);
+      if ($stmt) {
+        if ($vehicleType) {
+          $stmt->bind_param('ddds', $lat, $lng, $lat, $vehicleType);
+        } else {
+          $stmt->bind_param('ddd', $lat, $lng, $lat);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result && $row = $result->fetch_assoc()) {
+          return (int) $row['id'];
+        }
+      }
+    }
+
+    return $this->getDefaultDriverId($vehicleType);
+  }
+
+  // CREATE A NEW IMMEDIATE RIDE
+  public function create($userId, $pickup, $dropoff, $fare, $vehicleType, $distance = 0.0, $status = 'pending', $pickupLat = null, $pickupLng = null)
+  {
+    $driverId = $this->getNearestDriverId($pickupLat, $pickupLng, $vehicleType);
+    if ($driverId === null) {
+      return [
+        'success' => false,
+        'error' => 'No drivers available. A driver must be assigned to book a ride.'
+      ];
+    }
+
+    $hasVehicleCol = $this->hasColumn('vehicle_type');
+    $hasDistanceCol = $this->hasColumn('distance_km');
+    $dateTime = date('Y-m-d H:i:s');
+
+    if ($hasVehicleCol) {
+      $sql = "INSERT INTO {$this->table} (
+                driver_id,
+                user_id,
+                pickup_location,
+                dropoff_location,
+                status,
+                fare,
+                ride_date" . ($hasDistanceCol ? ', distance_km' : '') . ',
+                vehicle_type
+            ) VALUES (?, ?, ?, ?, ?, ?, ?' . ($hasDistanceCol ? ', ?' : '') . ', ?)';
+
+      $stmt = $this->conn->prepare($sql);
+      if ($hasDistanceCol) {
+        $stmt->bind_param('iisssdsds', $driverId, $userId, $pickup, $dropoff, $status, $fare, $dateTime, $distance, $vehicleType);
+      } else {
+        $stmt->bind_param('iisssdss', $driverId, $userId, $pickup, $dropoff, $status, $fare, $dateTime, $vehicleType);
+      }
+    } else {
+      // Fallback: If neither column exists, store without vehicle selection in pickup_location suffix
+      $sql = "INSERT INTO {$this->table} (
+                driver_id,
+                user_id,
+                pickup_location,
+                dropoff_location,
+                status,
+                fare,
+                ride_date" . ($hasDistanceCol ? ', distance_km' : '') . '
+            ) VALUES (?, ?, ?, ?, ?, ?, ?' . ($hasDistanceCol ? ', ?' : '') . ')';
+
+      $stmt = $this->conn->prepare($sql);
+      if ($hasDistanceCol) {
+        $stmt->bind_param('iisssdsd', $driverId, $userId, $pickup, $dropoff, $status, $fare, $dateTime, $distance);
+      } else {
+        $stmt->bind_param('iisssds', $driverId, $userId, $pickup, $dropoff, $status, $fare, $dateTime);
+      }
+    }
+
+    if ($stmt->execute()) {
+      return [
+        'success' => true,
+        'id' => $stmt->insert_id,
+        'driver_id' => $driverId
+      ];
+    }
+
+    return [
+      'success' => false,
+      'error' => $stmt->error
+    ];
+  }
+}
