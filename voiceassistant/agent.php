@@ -45,13 +45,18 @@ Security::corsHeaders(['GET', 'POST', 'OPTIONS']);
 // ── DB helper ────────────────────────────────────────────────────────────────
 function getDB(): ?mysqli
 {
-    $host   = getenv('DB_HOST')     ?: 'localhost';
+    $host   = getenv('DB_HOST')     ?: '127.0.0.1';
     $dbname = getenv('DB_NAME')     ?: 'accessride';
     $user   = getenv('DB_USER')     ?: 'root';
-    $pass   = getenv('DB_PASSWORD') ?: '';
+    $pass   = getenv('DB_PASS')     ?: (getenv('DB_PASSWORD') ?: '');
+    $port   = (int)(getenv('DB_PORT') ?: 3306);
 
-    $conn = new mysqli($host, $user, $pass, $dbname);
-    return $conn->connect_error ? null : $conn;
+    $conn = new mysqli($host, $user, $pass, $dbname, $port);
+    if ($conn->connect_error) {
+        return null;
+    }
+    $conn->set_charset('utf8mb4');
+    return $conn;
 }
 
 // ── Route by ?action= ─────────────────────────────────────────────────────────

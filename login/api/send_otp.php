@@ -66,15 +66,21 @@ try {
     $smsResult = $smsService->send($e164Phone, $message);
     $smsSent = ($smsResult === true);
 
-    echo json_encode([
+    $isDev = (getenv('APP_ENV') === 'development' || !getenv('APP_ENV'));
+    $responsePayload = [
         'success' => true,
         'message' => $smsSent 
-            ? "Real SMS OTP dispatched to {$e164Phone} via Text.lk!" 
-            : "OTP generated successfully ({$otpCode}). (If SMS didn't arrive, paste your free Text.lk API token into backend/.env)",
+            ? "Verification code dispatched to {$e164Phone}." 
+            : ($isDev ? "OTP generated ({$otpCode}). Configure TEXTLK_API_TOKEN in .env for live SMS." : "Verification code dispatched."),
         'sms_sent' => $smsSent,
         'phone' => $e164Phone,
-        'otp' => $otpCode
-    ]);
+    ];
+
+    if ($isDev) {
+        $responsePayload['otp'] = $otpCode;
+    }
+
+    echo json_encode($responsePayload);
 
 } catch (Exception $e) {
     http_response_code(500);
