@@ -17,13 +17,27 @@ try {
     $db = $database->connect();
     $rideModel = new Ride($db);
 
-    $data = json_decode(file_get_contents("php://input"), true);
+    $data = json_decode(file_get_contents("php://input"), true) ?: [];
     $ride_id = isset($data['ride_id']) ? intval($data['ride_id']) : null;
+    $driver_id = isset($data['driver_id']) ? intval($data['driver_id']) : null;
 
     if ($ride_id) {
         $result = $rideModel->cancelRide($ride_id);
+    } elseif ($driver_id) {
+        $stmt = $db->prepare("SELECT id FROM rides WHERE driver_id = ? AND (status='accepted' OR status='active') ORDER BY id DESC LIMIT 1");
+        $stmt->bind_param("i", $driver_id);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if ($res && !empty($res['id'])) {
+            $result = $rideModel->cancelRide((int)$res['id']);
+        } else {
+            $result = false;
+        }
     } else {
-        $result = $db->query("UPDATE rides SET status='cancelled' WHERE status='accepted' OR status='active' ORDER BY id DESC LIMIT 1");
+        http_response_code(400);
+        echo json_encode(["status" => "error", "message" => "ride_id or driver_id is required to cancel a ride"]);
+        exit;
     }
 
     if ($result) {
