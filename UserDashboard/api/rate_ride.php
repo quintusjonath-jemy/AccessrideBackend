@@ -49,12 +49,6 @@ try {
 
   $db = (new Database())->connect();
 
-  // Make sure rating column exists in rides table
-  $check_rating = $db->query("SHOW COLUMNS FROM rides LIKE 'rating'");
-  if ($check_rating && $check_rating->num_rows === 0) {
-    $db->query("ALTER TABLE rides ADD COLUMN rating INT DEFAULT NULL");
-  }
-
   $stmt = $db->prepare("UPDATE rides SET rating = ? WHERE id = ?");
   $stmt->bind_param('ii', $rating, $rideId);
   
@@ -76,12 +70,6 @@ try {
       
       if ($res_avg && $res_avg['avg_rating'] !== null) {
         $avgRating = floatval($res_avg['avg_rating']);
-        
-        // Make sure rating column exists in drivers table
-        $check_driver_rating = $db->query("SHOW COLUMNS FROM drivers LIKE 'rating'");
-        if ($check_driver_rating && $check_driver_rating->num_rows === 0) {
-          $db->query("ALTER TABLE drivers ADD COLUMN rating DECIMAL(3,2) DEFAULT NULL");
-        }
         
         // Update rating in drivers table
         $stmt_update_driver = $db->prepare("UPDATE drivers SET rating = ? WHERE id = ?");

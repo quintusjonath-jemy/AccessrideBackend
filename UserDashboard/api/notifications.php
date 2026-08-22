@@ -26,26 +26,6 @@ require_once __DIR__ . '/../config/Database.php';
 try {
   $db = (new Database())->connect();
 
-  // Auto-create user_notifications table if it doesn't exist (same as driver_notifications)
-  $db->query("
-    CREATE TABLE IF NOT EXISTS user_notifications (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      user_id INT NOT NULL,
-      title VARCHAR(120) NOT NULL,
-      message TEXT NOT NULL,
-      type ENUM('info','success','warning','ride','payment','system') DEFAULT 'info',
-      is_read TINYINT DEFAULT 0,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      INDEX (user_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  ");
-
-  // Auto-migration: add `type` column if the table was renamed from old `notifications` table
-  $colCheck = $db->query("SHOW COLUMNS FROM user_notifications LIKE 'type'");
-  if ($colCheck && $colCheck->num_rows === 0) {
-    $db->query("ALTER TABLE user_notifications ADD COLUMN type ENUM('info','success','warning','ride','payment','system') DEFAULT 'info' AFTER message");
-  }
-
   $method = $_SERVER['REQUEST_METHOD'];
 
   // GET ALL NOTIFICATIONS FOR USER

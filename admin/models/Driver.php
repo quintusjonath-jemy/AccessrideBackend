@@ -21,11 +21,6 @@ class Driver
   public function __construct($db)
   {
     $this->conn = $db;
-    // Ensure rating column exists in rides table
-    $check_rating = $this->conn->query("SHOW COLUMNS FROM rides LIKE 'rating'");
-    if ($check_rating && $check_rating->num_rows === 0) {
-      $this->conn->query("ALTER TABLE rides ADD COLUMN rating INT DEFAULT NULL");
-    }
   }
 
   // GET ALL DRIVERS

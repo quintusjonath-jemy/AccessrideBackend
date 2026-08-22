@@ -22,15 +22,6 @@ require_once __DIR__ . '/../config/Database.php';
 try {
   $db = (new Database())->connect();
 
-  // Ensure rate columns exist in settings
-  $check_rates = $db->query("SHOW COLUMNS FROM settings LIKE 'rate_bike'");
-  if ($check_rates && $check_rates->num_rows === 0) {
-    $db->query("ALTER TABLE settings ADD COLUMN rate_bike DECIMAL(10,2) DEFAULT 40.00");
-    $db->query("ALTER TABLE settings ADD COLUMN rate_three_wheeler DECIMAL(10,2) DEFAULT 60.00");
-    $db->query("ALTER TABLE settings ADD COLUMN rate_car DECIMAL(10,2) DEFAULT 80.00");
-    $db->query("ALTER TABLE settings ADD COLUMN rate_van DECIMAL(10,2) DEFAULT 100.00");
-  }
-
   $res = $db->query("SELECT rate_bike, rate_three_wheeler, rate_car, rate_van FROM settings WHERE admin_id = 1 LIMIT 1");
   $rates = [
     'bike' => 40.00,
