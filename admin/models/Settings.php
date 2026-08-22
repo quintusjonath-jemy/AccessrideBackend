@@ -16,18 +16,6 @@ class Settings
 
   private function ensureSettingsExist($admin_id)
   {
-    // Dynamically alter settings table to add SMTP fields if missing
-    $check_smtp = $this->conn->query("SHOW COLUMNS FROM " . $this->table . " LIKE 'smtp_host'");
-    if ($check_smtp && $check_smtp->num_rows === 0) {
-        $this->conn->query("ALTER TABLE " . $this->table . " 
-            ADD COLUMN smtp_host VARCHAR(255) DEFAULT 'smtp.gmail.com',
-            ADD COLUMN smtp_port INT DEFAULT 465,
-            ADD COLUMN smtp_user VARCHAR(255) DEFAULT '',
-            ADD COLUMN smtp_pass VARCHAR(255) DEFAULT '',
-            ADD COLUMN smtp_secure VARCHAR(50) DEFAULT 'ssl'
-        ");
-    }
-
     $sql = 'SELECT id FROM ' . $this->table . ' WHERE admin_id = ?';
     $stmt = $this->conn->prepare($sql);
     $stmt->bind_param('i', $admin_id);

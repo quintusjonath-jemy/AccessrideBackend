@@ -33,12 +33,6 @@ try {
   $userId = (int)$_GET['user_id'];
   $db = (new Database())->connect();
 
-  // Make sure rating column exists in rides table
-  $check_rating = $db->query("SHOW COLUMNS FROM rides LIKE 'rating'");
-  if ($check_rating && $check_rating->num_rows === 0) {
-    $db->query("ALTER TABLE rides ADD COLUMN rating INT DEFAULT NULL");
-  }
-
   // Get most recent completed or accepted/active ride for this user to show completion details
   $sql = "SELECT r.*, TRIM(CONCAT(d.first_name, ' ', COALESCE(d.last_name, ''))) AS driver_name, v.vehicle_type, v.vehicle_number 
           FROM rides r 
