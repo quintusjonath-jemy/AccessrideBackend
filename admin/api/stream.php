@@ -1,4 +1,7 @@
 <?php
+set_time_limit(0);
+ignore_user_abort(false);
+
 if (getenv('APP_ENV') === 'development') {
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
