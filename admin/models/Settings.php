@@ -165,10 +165,16 @@ class Settings
 
     // Fetch existing encrypted password to avoid overwriting with mask
     $existing_pass = "";
-    $query = $this->conn->query("SELECT smtp_pass FROM " . $this->table . " WHERE admin_id = $admin_id LIMIT 1");
-    if ($query) {
-        $row = $query->fetch_assoc();
-        $existing_pass = $row['smtp_pass'] ?? "";
+    $stmtPass = $this->conn->prepare("SELECT smtp_pass FROM " . $this->table . " WHERE admin_id = ? LIMIT 1");
+    if ($stmtPass) {
+        $stmtPass->bind_param('i', $admin_id);
+        $stmtPass->execute();
+        $resPass = $stmtPass->get_result();
+        if ($resPass) {
+            $row = $resPass->fetch_assoc();
+            $existing_pass = $row['smtp_pass'] ?? "";
+        }
+        $stmtPass->close();
     }
 
     $smtp_pass = $data['smtp_pass'] ?? '';

@@ -78,7 +78,7 @@ class TwilioSMS
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
       curl_setopt($ch, CURLOPT_POST, true);
       curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
-      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, (getenv('CURL_SSL_VERIFY') !== 'false'));
 
       $response = curl_exec($ch);
       $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -116,7 +116,7 @@ class TwilioSMS
         'Content-Type: application/json',
         'Accept: application/json'
       ]);
-      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, (getenv('CURL_SSL_VERIFY') !== 'false'));
 
       $response = curl_exec($ch);
       $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -156,7 +156,7 @@ class TwilioSMS
     curl_setopt($ch, CURLOPT_USERPWD, "{$this->sid}:{$this->token}");
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // For local dev compatibility
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, (getenv('CURL_SSL_VERIFY') !== 'false'));
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -205,7 +205,7 @@ class TwilioSMS
     curl_setopt($ch, CURLOPT_USERPWD, "{$this->sid}:{$this->token}");
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, (getenv('CURL_SSL_VERIFY') !== 'false'));
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

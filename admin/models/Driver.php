@@ -48,7 +48,12 @@ class Driver
         $expiryDate = $row['expires_at'];
 
         // Update driver subscription status to expired
-        $this->conn->query("UPDATE subscriptions SET status = 'expired' WHERE driver_id = $driverId");
+        $stmtExp = $this->conn->prepare("UPDATE subscriptions SET status = 'expired' WHERE driver_id = ?");
+        if ($stmtExp) {
+          $stmtExp->bind_param('i', $driverId);
+          $stmtExp->execute();
+          $stmtExp->close();
+        }
 
         // Log notification
         $msg = 'Driver ' . $driverName . "'s monthly membership subscription has expired.";

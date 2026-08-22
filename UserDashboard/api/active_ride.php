@@ -61,7 +61,12 @@ try {
       $rideRequestModel->acceptRequest($requestId, $driverId);
 
       // Update rides status to 'accepted'
-      $db->query("UPDATE rides SET status = 'accepted' WHERE id = " . (int)$rideId);
+      $updStmt = $db->prepare("UPDATE rides SET status = 'accepted' WHERE id = ?");
+      if ($updStmt) {
+        $updStmt->bind_param('i', $rideId);
+        $updStmt->execute();
+        $updStmt->close();
+      }
     }
   }
 
