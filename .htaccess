@@ -1,0 +1,20 @@
+# AccessRide Backend Apache Configuration for cPanel
+
+# 1. Protect Sensitive Files (.env, sql, logs)
+<FilesMatch "^\.env|.*\.sql|.*\.log$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# 2. Enable Rewrite Engine & Pass Authorization Headers
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+</IfModule>
+
+# 3. Enable CORS Headers for Options pre-flight
+<IfModule mod_headers.c>
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+</IfModule>

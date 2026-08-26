@@ -8,6 +8,8 @@
 -- PHP Version: 8.2.4
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET SESSION sql_require_primary_key = 0;
+SET FOREIGN_KEY_CHECKS = 0;
 START TRANSACTION;
 SET time_zone = "+00:00";
 
@@ -28,7 +30,7 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `admins` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `name` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
   `phone` varchar(20) DEFAULT NULL,
@@ -51,7 +53,7 @@ INSERT INTO `admins` (`id`, `name`, `email`, `phone`, `profile_image`, `password
 --
 
 CREATE TABLE `admin_notifications` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `type` varchar(50) NOT NULL,
   `message` text NOT NULL,
   `is_read` tinyint(1) DEFAULT 0,
@@ -166,7 +168,7 @@ INSERT INTO `admin_notifications` (`id`, `type`, `message`, `is_read`, `created_
 --
 
 CREATE TABLE `alerts` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `user_id` int(11) DEFAULT NULL,
   `driver_id` int(11) DEFAULT NULL,
   `alert_type` enum('sos','low_battery','navigation','driver_emergency','system') NOT NULL,
@@ -260,18 +262,7 @@ INSERT INTO `alerts` (`id`, `user_id`, `driver_id`, `alert_type`, `message`, `la
 (87, 16, 2, 'sos', 'Emergency SOS Alert', 6.93698560, 79.85233920, 'resolved', '2026-08-18 13:26:13'),
 (88, 16, 2, 'sos', 'Emergency SOS Alert', 6.93698560, 79.85233920, 'resolved', '2026-08-18 13:26:14');
 
---
--- Triggers `alerts`
---
-DELIMITER $$
-CREATE TRIGGER `after_alert_insert` AFTER INSERT ON `alerts` FOR EACH ROW INSERT INTO admin_notifications (type, message, created_at)
-        VALUES (
-            IF(NEW.alert_type IN ('sos', 'driver_emergency'), 'SOS', 'Alert'),
-            CONCAT('Alert: ', NEW.message),
-            NEW.created_at
-        )
-$$
-DELIMITER ;
+
 
 -- --------------------------------------------------------
 
@@ -280,7 +271,7 @@ DELIMITER ;
 --
 
 CREATE TABLE `drivers` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `first_name` varchar(50) DEFAULT NULL,
   `last_name` varchar(50) DEFAULT NULL,
   `email` varchar(100) NOT NULL,
@@ -322,27 +313,7 @@ INSERT INTO `drivers` (`id`, `first_name`, `last_name`, `email`, `profile_image`
 (36, 'Quintus', 'Jonath', '0772679514@accessride.com', '1783791485_Animeboy.jpeg', '0704054011', 'online', 'Glen Alpin, Badulla, Badulla, Sri Lanka', '2026-07-11 17:38:05', 6.98191590, 81.07578610, '1234567895', '2026-07-11', 'Male', 'Mannar', 'Mannar', 'Mannar', 'Northern', '40000', '15996234785', '2021-06-11', '2026-07-07', '2026-07-24', '$2y$12$Gx/PA/ZJHUlAT7N2FWk.tOMJORO0ydqDSECrJYBLgQL2gpgfsbfE.', 3.00);
 
 --
--- Triggers `drivers`
---
-DELIMITER $$
-CREATE TRIGGER `after_driver_insert` AFTER INSERT ON `drivers` FOR EACH ROW INSERT INTO admin_notifications (type, message, created_at)
-        VALUES ('Driver', CONCAT('New driver registered: ', TRIM(CONCAT(COALESCE(NEW.first_name, ''), ' ', COALESCE(NEW.last_name, '')))), NEW.created_at)
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `after_driver_update` AFTER UPDATE ON `drivers` FOR EACH ROW BEGIN
-            IF OLD.status IS NULL OR OLD.status <> NEW.status THEN
-                IF NEW.status = 'blocked' THEN
-                    INSERT INTO admin_notifications (type, message)
-                    VALUES ('Driver', CONCAT('Driver ', TRIM(CONCAT(COALESCE(NEW.first_name, ''), ' ', COALESCE(NEW.last_name, ''))), ' has been blocked'));
-                ELSEIF (NEW.status = 'offline' OR NEW.status = 'online' OR NEW.status = 'busy') AND OLD.status = 'blocked' THEN
-                    INSERT INTO admin_notifications (type, message)
-                    VALUES ('Driver', CONCAT('Driver ', TRIM(CONCAT(COALESCE(NEW.first_name, ''), ' ', COALESCE(NEW.last_name, ''))), ' has been unblocked'));
-                END IF;
-            END IF;
-        END
-$$
-DELIMITER ;
+
 
 -- --------------------------------------------------------
 
@@ -351,7 +322,7 @@ DELIMITER ;
 --
 
 CREATE TABLE `driver_cards` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `driver_id` int(11) NOT NULL,
   `cardholder_name` varchar(100) NOT NULL,
   `card_brand` varchar(20) NOT NULL,
@@ -369,7 +340,7 @@ CREATE TABLE `driver_cards` (
 --
 
 CREATE TABLE `driver_documents` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `driver_id` int(11) NOT NULL,
   `license_front` varchar(255) DEFAULT NULL,
   `license_back` varchar(255) DEFAULT NULL,
@@ -399,7 +370,7 @@ INSERT INTO `driver_documents` (`id`, `driver_id`, `license_front`, `license_bac
 --
 
 CREATE TABLE `driver_notifications` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `driver_id` int(11) NOT NULL,
   `title` varchar(120) NOT NULL,
   `message` text NOT NULL,
@@ -423,7 +394,7 @@ INSERT INTO `driver_notifications` (`id`, `driver_id`, `title`, `message`, `type
 --
 
 CREATE TABLE `driver_otps` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `phone` varchar(20) NOT NULL,
   `otp_code` varchar(6) NOT NULL,
   `is_verified` tinyint(1) DEFAULT 0,
@@ -452,7 +423,7 @@ INSERT INTO `driver_otps` (`id`, `phone`, `otp_code`, `is_verified`, `expires_at
 --
 
 CREATE TABLE `emergency_contacts` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `user_id` int(11) NOT NULL,
   `contact_name` varchar(100) NOT NULL,
   `relationship` varchar(50) DEFAULT NULL,
@@ -481,7 +452,7 @@ INSERT INTO `emergency_contacts` (`id`, `user_id`, `contact_name`, `relationship
 --
 
 CREATE TABLE `payments` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `ride_id` int(11) DEFAULT NULL,
   `user_id` int(11) DEFAULT NULL,
   `driver_id` int(11) DEFAULT NULL,
@@ -561,7 +532,7 @@ INSERT INTO `payments` (`id`, `ride_id`, `user_id`, `driver_id`, `amount`, `paym
 --
 
 CREATE TABLE `rides` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `driver_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `pickup_location` varchar(255) NOT NULL,
@@ -639,39 +610,7 @@ INSERT INTO `rides` (`id`, `driver_id`, `user_id`, `pickup_location`, `dropoff_l
 (86, 2, 16, 'Mannar Town, Mannar, Sri Lanka', 'Mannar, Sri Lanka', '2026-08-18 17:01:53', 'cancelled', 60.00, 1.00, 'cash', 'three wheeler', NULL),
 (87, 2, 16, 'Glen Alpin, Badulla, Badulla, Sri Lanka', 'Badulla, Badulla, Sri Lanka', '2026-08-21 08:28:40', 'completed', 60.00, 1.00, 'cash', 'three wheeler', 3);
 
---
--- Triggers `rides`
---
-DELIMITER $$
-CREATE TRIGGER `after_ride_insert` AFTER INSERT ON `rides` FOR EACH ROW INSERT INTO admin_notifications (type, message, created_at)
-        VALUES ('Ride', CONCAT('New ride booked: ', NEW.pickup_location, ' to ', NEW.dropoff_location), NEW.ride_date)
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `after_ride_update` AFTER UPDATE ON `rides` FOR EACH ROW BEGIN
-            IF OLD.status IS NULL OR OLD.status <> NEW.status THEN
-                IF NEW.status = 'emergency' THEN
-                    INSERT INTO admin_notifications (type, message)
-                    VALUES ('SOS', CONCAT('Emergency reported on ride from ', NEW.pickup_location, ' to ', NEW.dropoff_location));
-                END IF;
-            END IF;
-        END
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `resolve_alerts_on_ride_delete` AFTER DELETE ON `rides` FOR EACH ROW BEGIN
-    UPDATE alerts SET status = 'resolved' WHERE user_id = OLD.user_id AND status = 'pending';
-END
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `resolve_alerts_on_ride_status_change` AFTER UPDATE ON `rides` FOR EACH ROW BEGIN
-    IF NEW.status IN ('completed', 'cancelled') THEN
-        UPDATE alerts SET status = 'resolved' WHERE user_id = NEW.user_id AND status = 'pending';
-    END IF;
-END
-$$
-DELIMITER ;
+
 
 -- --------------------------------------------------------
 
@@ -680,7 +619,7 @@ DELIMITER ;
 --
 
 CREATE TABLE `ride_requests` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `user_id` int(11) NOT NULL,
   `driver_id` int(11) DEFAULT NULL,
   `ride_id` int(11) DEFAULT NULL,
@@ -779,7 +718,7 @@ INSERT INTO `ride_requests` (`id`, `user_id`, `driver_id`, `ride_id`, `user_stat
 --
 
 CREATE TABLE `settings` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `admin_id` int(11) NOT NULL,
   `sos_alert` tinyint(1) DEFAULT 1,
   `ride_alert` tinyint(1) DEFAULT 1,
@@ -819,7 +758,7 @@ INSERT INTO `settings` (`id`, `admin_id`, `sos_alert`, `ride_alert`, `driver_ale
 --
 
 CREATE TABLE `subscriptions` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `driver_id` int(11) NOT NULL,
   `status` varchar(50) DEFAULT 'none',
   `expires_at` date DEFAULT NULL,
@@ -851,7 +790,7 @@ INSERT INTO `subscriptions` (`id`, `driver_id`, `status`, `expires_at`, `last_pa
 --
 
 CREATE TABLE `users` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `first_name` varchar(50) DEFAULT NULL,
   `last_name` varchar(50) DEFAULT NULL,
   `email` varchar(100) NOT NULL,
@@ -879,28 +818,7 @@ INSERT INTO `users` (`id`, `first_name`, `last_name`, `email`, `profile_image`, 
 (18, 'kamal', 'rajini', 'kamalrajini@gmail.com', NULL, 'active', 'Glen Alpin, Badulla, Badulla, Sri Lanka', '2026-07-12 12:14:20', '0774589621', '$2y$12$Gx/PA/ZJHUlAT7N2FWk.tOMJORO0ydqDSECrJYBLgQL2gpgfsbfE.'),
 (19, 'Jannat', 'Edward', 'jannatedward@gmail.com', NULL, NULL, NULL, '2026-08-15 13:29:39', '0772679515', '$2y$10$Uj2yqMVqmAD7zu52rdSubOIUmPY0B0iLjtxcA44mv3z36yjxN6XDe');
 
---
--- Triggers `users`
---
-DELIMITER $$
-CREATE TRIGGER `after_user_insert` AFTER INSERT ON `users` FOR EACH ROW INSERT INTO admin_notifications (type, message, created_at)
-        VALUES ('User', CONCAT('New user registered: ', COALESCE(NULLIF(TRIM(CONCAT(COALESCE(NEW.first_name, ''), ' ', COALESCE(NEW.last_name, ''))), ''), NEW.email)), NEW.created_at)
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `after_user_update` AFTER UPDATE ON `users` FOR EACH ROW BEGIN
-            IF OLD.status IS NULL OR OLD.status <> NEW.status THEN
-                IF NEW.status = 'blocked' THEN
-                    INSERT INTO admin_notifications (type, message)
-                    VALUES ('User', CONCAT('User ', COALESCE(NULLIF(TRIM(CONCAT(COALESCE(NEW.first_name, ''), ' ', COALESCE(NEW.last_name, ''))), ''), NEW.email), ' has been blocked'));
-                ELSEIF NEW.status = 'active' AND OLD.status = 'blocked' THEN
-                    INSERT INTO admin_notifications (type, message)
-                    VALUES ('User', CONCAT('User ', COALESCE(NULLIF(TRIM(CONCAT(COALESCE(NEW.first_name, ''), ' ', COALESCE(NEW.last_name, ''))), ''), NEW.email), ' has been unblocked'));
-                END IF;
-            END IF;
-        END
-$$
-DELIMITER ;
+
 
 -- --------------------------------------------------------
 
@@ -909,7 +827,7 @@ DELIMITER ;
 --
 
 CREATE TABLE `user_notifications` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `user_id` int(11) NOT NULL,
   `title` varchar(255) DEFAULT NULL,
   `message` text DEFAULT NULL,
@@ -978,7 +896,7 @@ INSERT INTO `user_notifications` (`id`, `user_id`, `title`, `message`, `type`, `
 --
 
 CREATE TABLE `vehicles` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `driver_id` int(11) NOT NULL,
   `vehicle_number` varchar(50) NOT NULL,
   `vehicle_type` varchar(50) NOT NULL,
@@ -1012,20 +930,15 @@ INSERT INTO `vehicles` (`id`, `driver_id`, `vehicle_number`, `vehicle_type`, `ve
 -- Indexes for table `admins`
 --
 ALTER TABLE `admins`
-  ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `email` (`email`);
 
 --
 -- Indexes for table `admin_notifications`
 --
-ALTER TABLE `admin_notifications`
-  ADD PRIMARY KEY (`id`);
-
 --
 -- Indexes for table `alerts`
 --
 ALTER TABLE `alerts`
-  ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`),
   ADD KEY `driver_id` (`driver_id`);
 
@@ -1033,49 +946,42 @@ ALTER TABLE `alerts`
 -- Indexes for table `drivers`
 --
 ALTER TABLE `drivers`
-  ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `email` (`email`);
 
 --
 -- Indexes for table `driver_cards`
 --
 ALTER TABLE `driver_cards`
-  ADD PRIMARY KEY (`id`),
   ADD KEY `driver_id` (`driver_id`);
 
 --
 -- Indexes for table `driver_documents`
 --
 ALTER TABLE `driver_documents`
-  ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `driver_id` (`driver_id`);
 
 --
 -- Indexes for table `driver_notifications`
 --
 ALTER TABLE `driver_notifications`
-  ADD PRIMARY KEY (`id`),
   ADD KEY `driver_id` (`driver_id`);
 
 --
 -- Indexes for table `driver_otps`
 --
 ALTER TABLE `driver_otps`
-  ADD PRIMARY KEY (`id`),
   ADD KEY `phone` (`phone`);
 
 --
 -- Indexes for table `emergency_contacts`
 --
 ALTER TABLE `emergency_contacts`
-  ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `payments`
 --
 ALTER TABLE `payments`
-  ADD PRIMARY KEY (`id`),
   ADD KEY `ride_id` (`ride_id`),
   ADD KEY `user_id` (`user_id`),
   ADD KEY `driver_id` (`driver_id`);
@@ -1084,7 +990,6 @@ ALTER TABLE `payments`
 -- Indexes for table `rides`
 --
 ALTER TABLE `rides`
-  ADD PRIMARY KEY (`id`),
   ADD KEY `driver_id` (`driver_id`),
   ADD KEY `user_id` (`user_id`);
 
@@ -1092,7 +997,6 @@ ALTER TABLE `rides`
 -- Indexes for table `ride_requests`
 --
 ALTER TABLE `ride_requests`
-  ADD PRIMARY KEY (`id`),
   ADD KEY `fk_requests_user` (`user_id`),
   ADD KEY `fk_requests_driver` (`driver_id`),
   ADD KEY `fk_requests_ride` (`ride_id`);
@@ -1101,35 +1005,30 @@ ALTER TABLE `ride_requests`
 -- Indexes for table `settings`
 --
 ALTER TABLE `settings`
-  ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `admin_id` (`admin_id`);
 
 --
 -- Indexes for table `subscriptions`
 --
 ALTER TABLE `subscriptions`
-  ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `driver_id` (`driver_id`);
 
 --
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `email` (`email`);
 
 --
 -- Indexes for table `user_notifications`
 --
 ALTER TABLE `user_notifications`
-  ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `vehicles`
 --
 ALTER TABLE `vehicles`
-  ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `driver_id` (`driver_id`);
 
 --
