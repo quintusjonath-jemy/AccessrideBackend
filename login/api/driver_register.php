@@ -17,7 +17,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
-    $result = Driver::register($_POST, $_FILES);
+    $data = !empty($_POST) ? $_POST : (json_decode(file_get_contents('php://input'), true) ?? []);
+    $files = $_FILES ?? [];
+    $result = Driver::register($data, $files);
 
     if ($result) {
         echo json_encode([
