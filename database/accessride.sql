@@ -260,18 +260,7 @@ INSERT INTO `alerts` (`id`, `user_id`, `driver_id`, `alert_type`, `message`, `la
 (87, 16, 2, 'sos', 'Emergency SOS Alert', 6.93698560, 79.85233920, 'resolved', '2026-08-18 13:26:13'),
 (88, 16, 2, 'sos', 'Emergency SOS Alert', 6.93698560, 79.85233920, 'resolved', '2026-08-18 13:26:14');
 
---
--- Triggers `alerts`
---
-DELIMITER $$
-CREATE TRIGGER `after_alert_insert` AFTER INSERT ON `alerts` FOR EACH ROW INSERT INTO admin_notifications (type, message, created_at)
-        VALUES (
-            IF(NEW.alert_type IN ('sos', 'driver_emergency'), 'SOS', 'Alert'),
-            CONCAT('Alert: ', NEW.message),
-            NEW.created_at
-        )
-$$
-DELIMITER ;
+
 
 -- --------------------------------------------------------
 
@@ -322,27 +311,7 @@ INSERT INTO `drivers` (`id`, `first_name`, `last_name`, `email`, `profile_image`
 (36, 'Quintus', 'Jonath', '0772679514@accessride.com', '1783791485_Animeboy.jpeg', '0704054011', 'online', 'Glen Alpin, Badulla, Badulla, Sri Lanka', '2026-07-11 17:38:05', 6.98191590, 81.07578610, '1234567895', '2026-07-11', 'Male', 'Mannar', 'Mannar', 'Mannar', 'Northern', '40000', '15996234785', '2021-06-11', '2026-07-07', '2026-07-24', '$2y$12$Gx/PA/ZJHUlAT7N2FWk.tOMJORO0ydqDSECrJYBLgQL2gpgfsbfE.', 3.00);
 
 --
--- Triggers `drivers`
---
-DELIMITER $$
-CREATE TRIGGER `after_driver_insert` AFTER INSERT ON `drivers` FOR EACH ROW INSERT INTO admin_notifications (type, message, created_at)
-        VALUES ('Driver', CONCAT('New driver registered: ', TRIM(CONCAT(COALESCE(NEW.first_name, ''), ' ', COALESCE(NEW.last_name, '')))), NEW.created_at)
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `after_driver_update` AFTER UPDATE ON `drivers` FOR EACH ROW BEGIN
-            IF OLD.status IS NULL OR OLD.status <> NEW.status THEN
-                IF NEW.status = 'blocked' THEN
-                    INSERT INTO admin_notifications (type, message)
-                    VALUES ('Driver', CONCAT('Driver ', TRIM(CONCAT(COALESCE(NEW.first_name, ''), ' ', COALESCE(NEW.last_name, ''))), ' has been blocked'));
-                ELSEIF (NEW.status = 'offline' OR NEW.status = 'online' OR NEW.status = 'busy') AND OLD.status = 'blocked' THEN
-                    INSERT INTO admin_notifications (type, message)
-                    VALUES ('Driver', CONCAT('Driver ', TRIM(CONCAT(COALESCE(NEW.first_name, ''), ' ', COALESCE(NEW.last_name, ''))), ' has been unblocked'));
-                END IF;
-            END IF;
-        END
-$$
-DELIMITER ;
+
 
 -- --------------------------------------------------------
 
@@ -639,39 +608,7 @@ INSERT INTO `rides` (`id`, `driver_id`, `user_id`, `pickup_location`, `dropoff_l
 (86, 2, 16, 'Mannar Town, Mannar, Sri Lanka', 'Mannar, Sri Lanka', '2026-08-18 17:01:53', 'cancelled', 60.00, 1.00, 'cash', 'three wheeler', NULL),
 (87, 2, 16, 'Glen Alpin, Badulla, Badulla, Sri Lanka', 'Badulla, Badulla, Sri Lanka', '2026-08-21 08:28:40', 'completed', 60.00, 1.00, 'cash', 'three wheeler', 3);
 
---
--- Triggers `rides`
---
-DELIMITER $$
-CREATE TRIGGER `after_ride_insert` AFTER INSERT ON `rides` FOR EACH ROW INSERT INTO admin_notifications (type, message, created_at)
-        VALUES ('Ride', CONCAT('New ride booked: ', NEW.pickup_location, ' to ', NEW.dropoff_location), NEW.ride_date)
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `after_ride_update` AFTER UPDATE ON `rides` FOR EACH ROW BEGIN
-            IF OLD.status IS NULL OR OLD.status <> NEW.status THEN
-                IF NEW.status = 'emergency' THEN
-                    INSERT INTO admin_notifications (type, message)
-                    VALUES ('SOS', CONCAT('Emergency reported on ride from ', NEW.pickup_location, ' to ', NEW.dropoff_location));
-                END IF;
-            END IF;
-        END
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `resolve_alerts_on_ride_delete` AFTER DELETE ON `rides` FOR EACH ROW BEGIN
-    UPDATE alerts SET status = 'resolved' WHERE user_id = OLD.user_id AND status = 'pending';
-END
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `resolve_alerts_on_ride_status_change` AFTER UPDATE ON `rides` FOR EACH ROW BEGIN
-    IF NEW.status IN ('completed', 'cancelled') THEN
-        UPDATE alerts SET status = 'resolved' WHERE user_id = NEW.user_id AND status = 'pending';
-    END IF;
-END
-$$
-DELIMITER ;
+
 
 -- --------------------------------------------------------
 
@@ -879,28 +816,7 @@ INSERT INTO `users` (`id`, `first_name`, `last_name`, `email`, `profile_image`, 
 (18, 'kamal', 'rajini', 'kamalrajini@gmail.com', NULL, 'active', 'Glen Alpin, Badulla, Badulla, Sri Lanka', '2026-07-12 12:14:20', '0774589621', '$2y$12$Gx/PA/ZJHUlAT7N2FWk.tOMJORO0ydqDSECrJYBLgQL2gpgfsbfE.'),
 (19, 'Jannat', 'Edward', 'jannatedward@gmail.com', NULL, NULL, NULL, '2026-08-15 13:29:39', '0772679515', '$2y$10$Uj2yqMVqmAD7zu52rdSubOIUmPY0B0iLjtxcA44mv3z36yjxN6XDe');
 
---
--- Triggers `users`
---
-DELIMITER $$
-CREATE TRIGGER `after_user_insert` AFTER INSERT ON `users` FOR EACH ROW INSERT INTO admin_notifications (type, message, created_at)
-        VALUES ('User', CONCAT('New user registered: ', COALESCE(NULLIF(TRIM(CONCAT(COALESCE(NEW.first_name, ''), ' ', COALESCE(NEW.last_name, ''))), ''), NEW.email)), NEW.created_at)
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `after_user_update` AFTER UPDATE ON `users` FOR EACH ROW BEGIN
-            IF OLD.status IS NULL OR OLD.status <> NEW.status THEN
-                IF NEW.status = 'blocked' THEN
-                    INSERT INTO admin_notifications (type, message)
-                    VALUES ('User', CONCAT('User ', COALESCE(NULLIF(TRIM(CONCAT(COALESCE(NEW.first_name, ''), ' ', COALESCE(NEW.last_name, ''))), ''), NEW.email), ' has been blocked'));
-                ELSEIF NEW.status = 'active' AND OLD.status = 'blocked' THEN
-                    INSERT INTO admin_notifications (type, message)
-                    VALUES ('User', CONCAT('User ', COALESCE(NULLIF(TRIM(CONCAT(COALESCE(NEW.first_name, ''), ' ', COALESCE(NEW.last_name, ''))), ''), NEW.email), ' has been unblocked'));
-                END IF;
-            END IF;
-        END
-$$
-DELIMITER ;
+
 
 -- --------------------------------------------------------
 
