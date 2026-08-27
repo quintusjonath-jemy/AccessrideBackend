@@ -39,6 +39,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $uri = urldecode($uri);
 
+// Root health check endpoint
+if ($uri === '/' || empty($uri)) {
+    http_response_code(200);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'AccessRide Backend API is live and operational on Vercel',
+        'timestamp' => date('c')
+    ]);
+    exit;
+}
+
 // Base directory (root of backend)
 $baseDir = realpath(__DIR__ . '/..');
 $targetFile = $baseDir . $uri;
