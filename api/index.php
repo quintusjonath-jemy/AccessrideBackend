@@ -52,17 +52,31 @@ if ($uri === '/' || empty($uri)) {
 }
 
 // Base directory (root of backend)
-$baseDir = realpath(__DIR__ . '/..');
-$targetFile = $baseDir . $uri;
+$cleanUri = '/' . ltrim($uri, '/');
+$candidateDirs = [
+    realpath(__DIR__ . '/..'),
+    dirname(__DIR__),
+    __DIR__ . '/..',
+    $_SERVER['DOCUMENT_ROOT'] ?? '',
+    getcwd()
+];
 
-// If URI is directory or root, check for index.php
-if (is_dir($targetFile)) {
-    $targetFile = rtrim($targetFile, '/') . '/index.php';
+$targetFile = null;
+foreach ($candidateDirs as $dir) {
+    if (empty($dir)) continue;
+    $testPath = rtrim($dir, '/') . $cleanUri;
+    if (is_dir($testPath)) {
+        $testPath = rtrim($testPath, '/') . '/index.php';
+    }
+    if (file_exists($testPath) && is_file($testPath)) {
+        $targetFile = $testPath;
+        break;
+    }
 }
 
 // If file exists and is PHP, execute it
-if (file_exists($targetFile) && is_file($targetFile)) {
-    $ext = pathinfo($targetFile, PATHINFO_EXTENSION);
+if ($targetFile && file_exists($targetFile)) {
+    $ext = strtolower(pathinfo($targetFile, PATHINFO_EXTENSION));
     
     if ($ext === 'php') {
         chdir(dirname($targetFile));
