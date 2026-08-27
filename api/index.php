@@ -1,5 +1,7 @@
 <?php
 // Vercel Serverless Entry Point Router for AccessRide PHP Backend
+ini_set('display_errors', '0');
+error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
 
 // Load .env file into getenv() and $_ENV if present
 $envFile = realpath(__DIR__ . '/../.env');
