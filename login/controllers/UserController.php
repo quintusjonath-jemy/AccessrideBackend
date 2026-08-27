@@ -131,9 +131,9 @@ class UserController
         $_SESSION['user'] = [
             'id' => $user['id'],
             'email' => $user['email'],
-            'phone' => $user['phone'],
-            'name' => $user['first_name'] . ' ' . $user['last_name'],
-            'isDriver' => (bool)$user['is_driver'],
+            'phone' => $user['phone'] ?? '',
+            'name' => trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')),
+            'isDriver' => !empty($user['is_driver']),
         ];
 
         http_response_code(200);
