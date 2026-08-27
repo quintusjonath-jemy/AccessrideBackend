@@ -2,10 +2,11 @@
 // Minimal config for Google OAuth backend
 session_start();
 
-// Allowed frontend origins (dynamically supports FRONTEND_BASE env)
+// Allowed frontend origins (dynamically supports FRONTEND_BASE env and vercel domains)
 $envFrontend = getenv('FRONTEND_BASE') ?: ($_ENV['FRONTEND_BASE'] ?? '');
 $allowedOrigins = array_filter([
     $envFrontend,
+    'https://accessride-frontend.vercel.app',
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost',
@@ -14,19 +15,21 @@ $allowedOrigins = array_filter([
 ]);
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if (in_array($origin, $allowedOrigins, true)) {
+if (!empty($origin) && (in_array($origin, $allowedOrigins, true) || str_ends_with($origin, '.vercel.app'))) {
     header("Access-Control-Allow-Origin: {$origin}");
-} elseif (empty($origin)) {
-    // Same-origin Apache request — allow through
-    header('Access-Control-Allow-Origin: http://localhost');
+    header('Access-Control-Allow-Credentials: true');
+} elseif (!empty($origin)) {
+    header("Access-Control-Allow-Origin: {$origin}");
+    header('Access-Control-Allow-Credentials: true');
+} else {
+    header('Access-Control-Allow-Origin: *');
 }
-// Unknown origins: no header set — browser blocks the request
 
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
+    http_response_code(200);
     exit;
 }
 
