@@ -28,21 +28,24 @@ class Security
     {
         $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
         $envFrontend = getenv('FRONTEND_BASE') ?: ($_ENV['FRONTEND_BASE'] ?? '');
-        $allowed = array_filter(array_merge([$envFrontend], self::$allowedOrigins));
+        $allowed = array_filter(array_merge([$envFrontend, 'https://accessride-frontend.vercel.app'], self::$allowedOrigins));
 
-        if (!empty($origin) && in_array($origin, $allowed, true)) {
+        if (!empty($origin) && (in_array($origin, $allowed, true) || str_ends_with($origin, '.vercel.app'))) {
             header("Access-Control-Allow-Origin: {$origin}");
-        } elseif (empty($origin)) {
-            header('Access-Control-Allow-Origin: http://localhost');
+            header('Access-Control-Allow-Credentials: true');
+        } elseif (!empty($origin)) {
+            header("Access-Control-Allow-Origin: {$origin}");
+            header('Access-Control-Allow-Credentials: true');
+        } else {
+            header('Access-Control-Allow-Origin: *');
         }
 
         $methodStr = implode(', ', $methods);
         header("Access-Control-Allow-Methods: {$methodStr}");
-        header('Access-Control-Allow-Headers: Content-Type, X-Session-Token');
-        header('Access-Control-Allow-Credentials: true');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Session-Token');
 
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-            http_response_code(204);
+            http_response_code(200);
             exit;
         }
     }
