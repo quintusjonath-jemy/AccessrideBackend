@@ -18,14 +18,20 @@ class UserController
 
     public function register(): void
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? '');
+        if ($method === 'OPTIONS') {
+            http_response_code(200);
+            exit;
+        }
+
+        if ($method !== 'POST') {
             http_response_code(405);
-            echo json_encode(['error' => 'Method not allowed']);
+            echo json_encode(['error' => 'Method not allowed. Use POST.']);
             return;
         }
 
         $body = file_get_contents('php://input');
-        $data = json_decode($body, true);
+        $data = json_decode($body, true) ?: $_POST;
 
         if (!is_array($data)) {
             http_response_code(400);
@@ -68,14 +74,23 @@ class UserController
 
     public function login(): void
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['error' => 'Method not allowed']);
-            return;
+        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? '');
+        if ($method === 'OPTIONS') {
+            http_response_code(200);
+            exit;
+        }
+
+        if ($method !== 'POST') {
+            // Also check for post data in $_POST or fallback
+            if (empty($_POST) && empty(file_get_contents('php://input'))) {
+                http_response_code(405);
+                echo json_encode(['error' => 'Method not allowed. Use POST.']);
+                return;
+            }
         }
 
         $body = file_get_contents('php://input');
-        $data = json_decode($body, true);
+        $data = json_decode($body, true) ?: $_POST;
 
         if (!is_array($data)) {
             http_response_code(400);
