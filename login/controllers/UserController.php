@@ -118,7 +118,15 @@ class UserController
             return;
         }
 
-        $user = User::findByEmail($email);
+        try {
+            $user = User::findByEmail($email);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'error' => 'Database connection error: ' . $e->getMessage()
+            ]);
+            return;
+        }
 
         // Verify user exists and password is valid
         if (!$user || !password_verify($password, $user['password_hash'])) {

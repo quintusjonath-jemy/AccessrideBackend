@@ -80,28 +80,18 @@ class User {
     }
 
     public static function findByEmail(string $email): ?array {
-        try {
-            $pdo = self::getConnection();
-            $stmt = $pdo->prepare('SELECT * FROM users WHERE email = :email LIMIT 1');
-            $stmt->execute([':email' => $email]);
-            $user = $stmt->fetch();
-            return $user ?: null;
-        } catch (Exception $e) {
-            error_log('DB find by email failed: ' . $e->getMessage());
-            return null;
-        }
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare('SELECT * FROM users WHERE email = :email LIMIT 1');
+        $stmt->execute([':email' => $email]);
+        $user = $stmt->fetch();
+        return $user ?: null;
     }
 
     public static function findByPhone(string $phone): ?array {
-        try {
-            $pdo = self::getConnection();
-            $stmt = $pdo->prepare('SELECT * FROM users WHERE phone = :phone AND is_driver = 1 LIMIT 1');
-            $stmt->execute([':phone' => $phone]);
-            $user = $stmt->fetch();
-            return $user ?: null;
-        } catch (Exception $e) {
-            error_log('DB find by phone failed: ' . $e->getMessage());
-            return null;
-        }
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare('SELECT * FROM users WHERE phone = :phone AND is_driver = 1 LIMIT 1');
+        $stmt->execute([':phone' => $phone]);
+        $user = $stmt->fetch();
+        return $user ?: null;
     }
 }
