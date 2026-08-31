@@ -51,15 +51,9 @@ try {
     $stmt->close();
     $db->close();
 
-    if (!$admin) {
+    if (!$admin || !password_verify($password, $admin['password'])) {
         http_response_code(401);
-        echo json_encode(['error' => 'Admin account not found']);
-        exit;
-    }
-
-    if (!password_verify($password, $admin['password'])) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Incorrect password']);
+        echo json_encode(['error' => 'Username or password is invalid']);
         exit;
     }
 

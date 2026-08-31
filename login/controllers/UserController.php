@@ -131,7 +131,7 @@ class UserController
         // Verify user exists and password is valid
         if (!$user || !password_verify($password, $user['password_hash'])) {
             http_response_code(401);
-            echo json_encode(['error' => 'Username or password invalid']);
+            echo json_encode(['error' => 'Username or password is invalid']);
             return;
         }
 

@@ -48,13 +48,10 @@ if (empty($phone) || empty($password)) {
 $driver = Driver::login($phone, $password);
 
 if (!$driver) {
-
     http_response_code(401);
-
     echo json_encode([
-        "error" => "Invalid phone or password"
+        "error" => "Username or password is invalid"
     ]);
-
     exit;
 }
 
