@@ -14,9 +14,11 @@ class Admin
     private $created_at;
     private static function getConnection()
     {
+        $port = defined('DB_PORT') ? DB_PORT : '3306';
         $dsn = sprintf(
-            "mysql:host=%s;dbname=%s;charset=%s",
+            "mysql:host=%s;port=%s;dbname=%s;charset=%s",
             DB_HOST,
+            $port,
             DB_NAME,
             DB_CHARSET
         );
