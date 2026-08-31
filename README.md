@@ -160,6 +160,51 @@ PAYHERE_SANDBOX=true
 
 ---
 
+## 👥 Contributors & Team Members
+
+<table align="center">
+  <tr>
+    <td align="center" width="25%">
+      <a href="https://github.com/quintusjonath-jemy">
+        <img src="https://github.com/quintusjonath-jemy.png?size=100" width="100px;" alt="Quintus Jonath" style="border-radius:50%"/>
+        <br />
+        <sub><b>Quintus Jonath</b></sub>
+      </a>
+      <br />
+      <span style="font-size:12px;color:#888;">Lead Developer</span>
+    </td>
+    <td align="center" width="25%">
+      <a href="https://github.com/kabil0507">
+        <img src="https://github.com/kabil0507.png?size=100" width="100px;" alt="Kabilan" style="border-radius:50%"/>
+        <br />
+        <sub><b>Kabilan</b></sub>
+      </a>
+      <br />
+      <span style="font-size:12px;color:#888;">Full-Stack Developer</span>
+    </td>
+    <td align="center" width="25%">
+      <a href="https://github.com/KRITHIKA3006">
+        <img src="https://github.com/KRITHIKA3006.png?size=100" width="100px;" alt="Krithika" style="border-radius:50%"/>
+        <br />
+        <sub><b>Krithika</b></sub>
+      </a>
+      <br />
+      <span style="font-size:12px;color:#888;">Developer & UI/UX</span>
+    </td>
+    <td align="center" width="25%">
+      <a href="https://github.com/nithan11">
+        <img src="https://github.com/nithan11.png?size=100" width="100px;" alt="Nithan" style="border-radius:50%"/>
+        <br />
+        <sub><b>Nithan</b></sub>
+      </a>
+      <br />
+      <span style="font-size:12px;color:#888;">Developer & QA</span>
+    </td>
+  </tr>
+</table>
+
+---
+
 <p align="center">
   Made with ❤️ by the AccessRide Team
 </p>
