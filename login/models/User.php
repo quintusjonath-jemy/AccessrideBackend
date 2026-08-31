@@ -30,18 +30,34 @@ class User {
             $pdo = self::getConnection();
             $pdo->beginTransaction();
 
-            $stmt = $pdo->prepare(
-                'INSERT INTO users (first_name, last_name, email, phone, location, password_hash) VALUES (:first_name, :last_name, :email, :phone, :location, :password_hash)'
-            );
+            // Detect existing columns in users table
+            $colsQuery = $pdo->query("SHOW COLUMNS FROM users");
+            $existingCols = $colsQuery ? $colsQuery->fetchAll(PDO::FETCH_COLUMN) : [];
 
-            $stmt->execute([
-                ':first_name' => $user->first_name,
-                ':last_name' => $user->last_name,
-                ':email' => $user->email,
-                ':phone' => $user->phone,
-                ':location' => $user->location,
-                ':password_hash' => password_hash(isset($data['password']) ? $data['password'] : '', PASSWORD_DEFAULT)
-            ]);
+            $userFields = [
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'password_hash' => password_hash(isset($data['password']) ? $data['password'] : '', PASSWORD_DEFAULT)
+            ];
+
+            if (empty($existingCols) || in_array('location', $existingCols)) {
+                $userFields['location'] = $user->location;
+            }
+            if (in_array('address', $existingCols)) {
+                $userFields['address'] = $user->location;
+            }
+
+            $colNames = implode(', ', array_map(function($c) { return "`$c`"; }, array_keys($userFields)));
+            $placeholders = implode(', ', array_map(function($c) { return ":$c"; }, array_keys($userFields)));
+
+            $stmt = $pdo->prepare("INSERT INTO users ($colNames) VALUES ($placeholders)");
+            $params = [];
+            foreach ($userFields as $k => $v) {
+                $params[":$k"] = $v;
+            }
+            $stmt->execute($params);
 
             $userId = $pdo->lastInsertId();
             $user->id = $userId;
