@@ -99,8 +99,16 @@ class Driver
             SELECT 
                 d.id, 
                 TRIM(CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, ''))) AS name, 
+                d.first_name,
+                d.last_name,
                 d.email, 
                 d.phone, 
+                d.profile_image,
+                d.nic,
+                d.license_number,
+                d.license_expiry,
+                d.registration_expiry,
+                d.insurance_expiry,
                 v.vehicle_number, 
                 v.vehicle_type, 
                 d.status, 
@@ -112,6 +120,17 @@ class Driver
                 s.expires_at AS subscription_expires_at, 
                 s.last_payment_date, 
                 s.amount AS subscription_amount,
+                doc.license_front,
+                doc.license_back,
+                doc.nic_front,
+                doc.nic_back,
+                doc.registration_image,
+                doc.insurance_image,
+                doc.vehicle_front,
+                doc.vehicle_rear,
+                doc.vehicle_interior,
+                doc.dashboard_photo,
+                (CASE WHEN doc.id IS NOT NULL OR doc.license_front IS NOT NULL THEN 1 ELSE 0 END) AS has_documents,
                 COALESCE((
                     SELECT SUM(r_rating.rating) / NULLIF(COUNT(r_rating.id), 0)
                     FROM rides r_rating
@@ -122,11 +141,13 @@ class Driver
             FROM drivers d 
             LEFT JOIN vehicles v ON d.id = v.driver_id
             LEFT JOIN subscriptions s ON d.id = s.driver_id
+            LEFT JOIN driver_documents doc ON d.id = doc.driver_id
         ");
     $drivers = [];
 
     while ($row = $result->fetch_assoc()) {
       $row['monthly_rating'] = (float)$row['monthly_rating'];
+      $row['has_documents'] = (bool)$row['has_documents'];
       $drivers[] = $row;
     }
 
@@ -140,8 +161,23 @@ class Driver
             SELECT 
                 d.id, 
                 TRIM(CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, ''))) AS name, 
+                d.first_name,
+                d.last_name,
                 d.email, 
                 d.phone, 
+                d.profile_image,
+                d.nic,
+                d.dob,
+                d.gender,
+                d.street,
+                d.town,
+                d.district,
+                d.province,
+                d.postal_code,
+                d.license_number,
+                d.license_expiry,
+                d.registration_expiry,
+                d.insurance_expiry,
                 v.vehicle_number, 
                 v.vehicle_type, 
                 d.status, 
@@ -153,6 +189,16 @@ class Driver
                 s.expires_at AS subscription_expires_at, 
                 s.last_payment_date, 
                 s.amount AS subscription_amount,
+                doc.license_front,
+                doc.license_back,
+                doc.registration_image,
+                doc.insurance_image,
+                doc.nic_front,
+                doc.nic_back,
+                doc.vehicle_front,
+                doc.vehicle_rear,
+                doc.vehicle_interior,
+                doc.dashboard_photo,
                 (SELECT COUNT(*) FROM rides r WHERE r.driver_id = d.id AND r.status = 'completed') AS completed_rides_count,
                 (SELECT COALESCE(SUM(r.fare), 0) FROM rides r WHERE r.driver_id = d.id AND r.status = 'completed') AS gross_earnings,
                 COALESCE((
@@ -165,6 +211,7 @@ class Driver
             FROM drivers d 
             LEFT JOIN vehicles v ON d.id = v.driver_id 
             LEFT JOIN subscriptions s ON d.id = s.driver_id 
+            LEFT JOIN driver_documents doc ON d.id = doc.driver_id
             WHERE d.id=?
         ");
     $stmt->bind_param('i', $id);
