@@ -797,6 +797,7 @@ CREATE TABLE `users` (
   `profile_image` varchar(255) DEFAULT NULL,
   `status` varchar(50) DEFAULT NULL,
   `location` varchar(100) DEFAULT NULL,
+  `address` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `phone` varchar(20) DEFAULT NULL,
   `password_hash` varchar(255) NOT NULL
