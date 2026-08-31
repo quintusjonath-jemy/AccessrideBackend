@@ -25,12 +25,13 @@ class User {
             $user->last_name = isset($data['lastName']) ? $data['lastName'] : '';
             $user->email = isset($data['email']) ? $data['email'] : '';
             $user->phone = isset($data['phone']) ? $data['phone'] : '';
+            $user->location = isset($data['homeAddress']) ? $data['homeAddress'] : (isset($data['location']) ? $data['location'] : (isset($data['address']) ? $data['address'] : ''));
 
             $pdo = self::getConnection();
             $pdo->beginTransaction();
 
             $stmt = $pdo->prepare(
-                'INSERT INTO users (first_name, last_name, email, phone, password_hash) VALUES (:first_name, :last_name, :email, :phone, :password_hash)'
+                'INSERT INTO users (first_name, last_name, email, phone, location, password_hash) VALUES (:first_name, :last_name, :email, :phone, :location, :password_hash)'
             );
 
             $stmt->execute([
@@ -38,6 +39,7 @@ class User {
                 ':last_name' => $user->last_name,
                 ':email' => $user->email,
                 ':phone' => $user->phone,
+                ':location' => $user->location,
                 ':password_hash' => password_hash(isset($data['password']) ? $data['password'] : '', PASSWORD_DEFAULT)
             ]);
 
