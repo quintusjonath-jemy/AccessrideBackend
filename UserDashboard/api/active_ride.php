@@ -28,9 +28,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../models/RideRequest.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
-  if (!isset($_GET['user_id'])) {
+  $userId = IdHelper::decodeUser($_GET['user_id'] ?? null);
+  if (!$userId) {
     http_response_code(400);
     echo json_encode([
       'success' => false,
@@ -38,8 +40,6 @@ try {
     ]);
     exit;
   }
-
-  $userId = (int) $_GET['user_id'];
   $db = (new Database())->connect();
   $rideRequestModel = new RideRequest($db);
 

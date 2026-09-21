@@ -11,13 +11,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-require_once '../config/Database.php';
+require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
     $body = file_get_contents('php://input');
     $data = json_decode($body, true);
 
-    if (!$data || empty($data['driver_id']) || empty($data['first_name']) || empty($data['last_name']) || empty($data['email']) || empty($data['phone'])) {
+    $driverId = IdHelper::decodeDriver($data['driver_id'] ?? null);
+
+    if (!$data || !$driverId || empty($data['first_name']) || empty($data['last_name']) || empty($data['email']) || empty($data['phone'])) {
         http_response_code(400);
         echo json_encode([
             'success' => false,
@@ -25,8 +28,6 @@ try {
         ]);
         exit;
     }
-
-    $driverId = (int)$data['driver_id'];
     $firstName = trim($data['first_name']);
     $lastName = trim($data['last_name']);
     $email = trim($data['email']);

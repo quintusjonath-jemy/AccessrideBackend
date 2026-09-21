@@ -146,7 +146,7 @@ if ($action === 'get_user_location') {
     Security::rateLimit('get_location', 60);
 
     // SECURITY LAYER 3 — user_id in request must match session
-    $requestedId = (int)($_GET['user_id'] ?? 0);
+    $requestedId = IdHelper::decodeUser($_GET['user_id'] ?? null) ?? 0;
     Security::checkOwnership($requestedId);
 
     $db = getDB();
@@ -185,7 +185,7 @@ if ($action === 'get_last_ride') {
     Security::rateLimit('get_last_ride', 60);
 
     // SECURITY LAYER 3 — Ownership check
-    $requestedId = (int)($_GET['user_id'] ?? 0);
+    $requestedId = IdHelper::decodeUser($_GET['user_id'] ?? null) ?? 0;
     Security::checkOwnership($requestedId);
 
     $db = getDB();

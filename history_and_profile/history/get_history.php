@@ -8,9 +8,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-include "../config/database.php";
+require_once __DIR__ . "/../config/database.php";
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
-$user_id = $_GET['user_id'] ?? $_POST['user_id'] ?? 1;
+$raw_user_id = $_GET['user_id'] ?? $_POST['user_id'] ?? '1';
+$user_id = IdHelper::decodeUser($raw_user_id) ?? 1;
 
 $sql = "SELECT 
             r.id,

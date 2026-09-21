@@ -11,7 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-require_once '../config/Database.php';
+require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
     $database = new Database();
@@ -37,7 +38,7 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $body = json_decode(file_get_contents('php://input'), true);
         $action   = $body['action'] ?? '';
-        $driverId = isset($body['driver_id']) ? (int)$body['driver_id'] : 0;
+        $driverId = IdHelper::decodeDriver($body['driver_id'] ?? null) ?? 0;
 
         if (!$driverId) {
             http_response_code(400);
@@ -67,13 +68,12 @@ try {
     // -------------------------------------------------------
     // GET: fetch notifications
     // -------------------------------------------------------
-    if (empty($_GET['driver_id'])) {
+    $driverId = IdHelper::decodeDriver($_GET['driver_id'] ?? null);
+    if (!$driverId) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Driver ID required']);
         exit;
     }
-
-    $driverId = (int)$_GET['driver_id'];
 
     // -----------------------------------------------------------
     // COUNT-ONLY mode: DriverHeader bell uses ?driver_id=X&count=1

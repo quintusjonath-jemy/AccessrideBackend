@@ -22,6 +22,7 @@ if (php_sapi_name() === 'cli') {
 }
 
 require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
   $db = (new Database())->connect();
@@ -30,12 +31,12 @@ try {
 
   // GET ALL NOTIFICATIONS FOR USER
   if ($method === 'GET') {
-    if (!isset($_GET['user_id'])) {
+    $userId = IdHelper::decodeUser($_GET['user_id'] ?? null);
+    if (!$userId) {
       http_response_code(400);
       echo json_encode(['success' => false, 'message' => 'User ID is required']);
       exit;
     }
-    $userId = (int)$_GET['user_id'];
 
     $stmt = $db->prepare("SELECT id, title, message, is_read, created_at FROM user_notifications WHERE user_id = ? ORDER BY created_at DESC");
     $stmt->bind_param('i', $userId);
@@ -61,12 +62,12 @@ try {
     
     // Check if we need to mark all as read
     if (isset($_GET['read_all']) || (isset($data['read_all']) && $data['read_all'])) {
-      if (!isset($_GET['user_id']) && !isset($data['user_id'])) {
+      $userId = IdHelper::decodeUser($_GET['user_id'] ?? ($data['user_id'] ?? null));
+      if (!$userId) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'User ID is required to mark all read']);
         exit;
       }
-      $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : (int)$data['user_id'];
       
       $stmt = $db->prepare("UPDATE user_notifications SET is_read = 1 WHERE user_id = ?");
       $stmt->bind_param('i', $userId);

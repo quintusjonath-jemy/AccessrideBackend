@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../config/Database.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 // Self-contained environment loader
 function loadEnv() {
@@ -39,7 +40,9 @@ try {
     $body = file_get_contents('php://input');
     $data = json_decode($body, true);
 
-    if (!$data || empty($data['driver_id'])) {
+    $driverId = IdHelper::decodeDriver($data['driver_id'] ?? null);
+
+    if (!$data || !$driverId) {
         http_response_code(400);
         echo json_encode([
             'success' => false,
@@ -47,8 +50,6 @@ try {
         ]);
         exit;
     }
-
-    $driverId = (int)$data['driver_id'];
     
     $database = new Database();
     $db = $database->connect();

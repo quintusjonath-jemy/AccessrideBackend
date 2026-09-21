@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 class Ride {
 
@@ -70,6 +71,8 @@ class Ride {
 
     // ADD RIDE
     public function addRide($data) {
+        $driverId = IdHelper::decodeDriver($data['driver_id'] ?? null);
+        $userId = IdHelper::decodeUser($data['user_id'] ?? null);
 
         $stmt = $this->conn->prepare("
             INSERT INTO rides (
@@ -86,8 +89,8 @@ class Ride {
 
         $stmt->bind_param(
             "iisssdd",
-            $data['driver_id'],
-            $data['user_id'],
+            $driverId,
+            $userId,
             $data['pickup_location'],
             $data['dropoff_location'],
             $data['status'],
@@ -100,6 +103,9 @@ class Ride {
 
     // UPDATE RIDE
     public function updateRide($data) {
+        $driverId = IdHelper::decodeDriver($data['driver_id'] ?? null);
+        $userId = IdHelper::decodeUser($data['user_id'] ?? null);
+        $id = IdHelper::decodeRide($data['id'] ?? null);
 
         $stmt = $this->conn->prepare("
             UPDATE rides
@@ -116,14 +122,14 @@ class Ride {
 
         $stmt->bind_param(
             "iisssddi",
-            $data['driver_id'],
-            $data['user_id'],
+            $driverId,
+            $userId,
             $data['pickup_location'],
             $data['dropoff_location'],
             $data['status'],
             $data['fare'],
             $data['distance_km'],
-            $data['id']
+            $id
         );
 
         return $stmt->execute();
@@ -131,8 +137,9 @@ class Ride {
 
     // DELETE RIDE
     public function deleteRide($id) {
+        $rideId = IdHelper::decodeRide($id);
         $stmt = $this->conn->prepare("DELETE FROM rides WHERE id=?");
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("i", $rideId);
 
         return $stmt->execute();
     }

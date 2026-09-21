@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 class UserController
 {
@@ -8,6 +9,7 @@ class UserController
     {
         $currentUser = User::current();
         if ($currentUser) {
+            $currentUser['id'] = IdHelper::encodeUser((int)($currentUser['raw_id'] ?? $currentUser['id']));
             echo json_encode(['user' => $currentUser]);
             return;
         }
@@ -81,7 +83,6 @@ class UserController
         }
 
         if ($method !== 'POST') {
-            // Also check for post data in $_POST or fallback
             if (empty($_POST) && empty(file_get_contents('php://input'))) {
                 http_response_code(405);
                 echo json_encode(['error' => 'Method not allowed. Use POST.']);
@@ -98,23 +99,14 @@ class UserController
             return;
         }
 
-        $password = $data['password'] ?? null;
-
-
-
-        // Find user by email (rider) or phone (driver)
-
         $email = $data['email'] ?? null;
         $password = $data['password'] ?? null;
 
         if (!$email || !$password) {
-
             http_response_code(400);
-
             echo json_encode([
                 'error' => 'Email and password required'
             ]);
-
             return;
         }
 
@@ -135,9 +127,12 @@ class UserController
             return;
         }
 
+        $encodedId = IdHelper::encodeUser((int)$user['id']);
+
         // Successful login
         $_SESSION['user'] = [
-            'id' => $user['id'],
+            'id' => $encodedId,
+            'raw_id' => (int)$user['id'],
             'email' => $user['email'],
             'phone' => $user['phone'] ?? '',
             'name' => trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')),

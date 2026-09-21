@@ -9,14 +9,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require_once '../config/Database.php';
+require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
     $database = new Database();
     $db = $database->connect();
 
     $data = json_decode(file_get_contents("php://input"), true);
-    $driver_id = isset($data['driver_id']) ? intval($data['driver_id']) : null;
+    $driver_id = IdHelper::decodeDriver($data['driver_id'] ?? null);
     $location = isset($data['location']) ? trim($data['location']) : null;
     $latitude = isset($data['latitude']) ? floatval($data['latitude']) : null;
     $longitude = isset($data['longitude']) ? floatval($data['longitude']) : null;

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 class User {
 
@@ -37,26 +38,30 @@ class User {
 
     // ADD USER
     public function addUser($data) {
-        $parts = explode(' ', trim($data['name']), 2);
-        $this->first_name = $parts[0];
-        $this->last_name = isset($parts[1]) ? $parts[1] : '';
-        $this->email = isset($data['email']) ? $data['email'] : '';
-        $this->status = isset($data['status']) ? $data['status'] : 'active';
-        $this->location = isset($data['location']) ? $data['location'] : '';
+        $parts = explode(' ', trim($data['name'] ?? ''), 2);
+        $first_name = $parts[0] ?? '';
+        $last_name = isset($parts[1]) ? $parts[1] : '';
+        $email = isset($data['email']) ? $data['email'] : '';
+        $phone = isset($data['phone']) ? $data['phone'] : '';
+        $status = isset($data['status']) ? $data['status'] : 'active';
+        $location = isset($data['location']) ? $data['location'] : '';
+        $password_hash = password_hash($data['password'] ?? 'User@123', PASSWORD_BCRYPT);
 
         $sql = "INSERT INTO users
-                (first_name, last_name, email, status, location)
-                VALUES (?, ?, ?, ?, ?)";
+                (first_name, last_name, email, phone, status, location, password_hash)
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         $stmt = $this->conn->prepare($sql);
 
         $stmt->bind_param(
-            "sssss",
-            $this->first_name,
-            $this->last_name,
-            $this->email,
-            $this->status,
-            $this->location
+            "sssssss",
+            $first_name,
+            $last_name,
+            $email,
+            $phone,
+            $status,
+            $location,
+            $password_hash
         );
 
         return $stmt->execute();
@@ -64,40 +69,42 @@ class User {
 
     // UPDATE USER
     public function updateUser($data) {
-        $this->id = (int)$data['id'];
-        $parts = explode(' ', trim($data['name']), 2);
-        $this->first_name = $parts[0];
-        $this->last_name = isset($parts[1]) ? $parts[1] : '';
-        $this->email = isset($data['email']) ? $data['email'] : '';
-        $this->status = isset($data['status']) ? $data['status'] : 'active';
-        $this->location = isset($data['location']) ? $data['location'] : '';
+        $userId = IdHelper::decodeUser($data['id'] ?? null);
+        if (!$userId) return false;
+
+        $oldRes = $this->conn->query("SELECT * FROM users WHERE id = " . (int)$userId);
+        if (!$oldRes || $oldRes->num_rows === 0) return false;
+        $oldRow = $oldRes->fetch_assoc();
+
+        if (isset($data['name'])) {
+            $parts = explode(' ', trim($data['name']), 2);
+            $first_name = $parts[0];
+            $last_name = isset($parts[1]) ? $parts[1] : '';
+        } else {
+            $first_name = $oldRow['first_name'];
+            $last_name = $oldRow['last_name'];
+        }
+
+        $email = $data['email'] ?? $oldRow['email'];
+        $phone = $data['phone'] ?? $oldRow['phone'];
+        $status = $data['status'] ?? $oldRow['status'];
+        $location = $data['location'] ?? $oldRow['location'];
 
         $sql = "UPDATE users
-                SET first_name=?, last_name=?, email=?, status=?, location=?
+                SET first_name=?, last_name=?, email=?, phone=?, status=?, location=?
                 WHERE id=?";
 
         $stmt = $this->conn->prepare($sql);
 
         $stmt->bind_param(
-            "sssssi",
-            $this->first_name,
-            $this->last_name,
-            $this->email,
-            $this->status,
-            $this->location,
-            $this->id
-        );
-
-        $stmt = $this->conn->prepare($sql);
-
-        $stmt->bind_param(
-            "sssssi",
+            "ssssssi",
             $first_name,
             $last_name,
-            $data['email'],
-            $data['status'],
-            $data['location'],
-            $data['id']
+            $email,
+            $phone,
+            $status,
+            $location,
+            $userId
         );
 
         return $stmt->execute();
@@ -105,28 +112,30 @@ class User {
 
     // DELETE USER
     public function deleteUser($id) {
-
+        $userId = IdHelper::decodeUser($id);
         $sql = "DELETE FROM users WHERE id=?";
 
         $stmt = $this->conn->prepare($sql);
 
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("i", $userId);
 
         return $stmt->execute();
     }
 
     // HIDE USER
     public function toggleUserStatus($id) {
-
+        $userId = IdHelper::decodeUser($id);
         $stmt = $this->conn->prepare(
             "SELECT status FROM users WHERE id=?"
         );
 
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("i", $userId);
 
         $stmt->execute();
 
         $user = $stmt->get_result()->fetch_assoc();
+
+        if (!$user) return false;
 
         $newStatus =
             strtolower($user['status']) === 'blocked'
@@ -140,13 +149,14 @@ class User {
         $stmt->bind_param(
             "si",
             $newStatus,
-            $id
+            $userId
         );
 
         return $stmt->execute();
     }
 
     public function getUserById($id) {
+        $userId = IdHelper::decodeUser($id);
         $stmt = $this->conn->prepare("
             SELECT 
                 u.id, 
@@ -165,7 +175,7 @@ class User {
             FROM users u
             WHERE u.id=?
         ");
-        $stmt->bind_param('i', $id);
+        $stmt->bind_param('i', $userId);
         $stmt->execute();
         $result = $stmt->get_result()->fetch_assoc();
 

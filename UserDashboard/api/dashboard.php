@@ -11,20 +11,19 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET');
 
-require_once '../config/Database.php';
-require_once '../controllers/DashboardController.php';
+require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../controllers/DashboardController.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
-  if (!isset($_GET['user_id'])) {
+  $userId = IdHelper::decodeUser($_GET['user_id'] ?? null);
+  if (!$userId) {
     echo json_encode([
       'success' => false,
       'message' => 'User ID is required'
     ]);
-
     exit;
   }
-
-  $userId = (int) $_GET['user_id'];
 
   $database = new Database();
   $db = $database->connect();

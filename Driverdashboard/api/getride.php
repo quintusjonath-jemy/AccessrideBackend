@@ -9,8 +9,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require_once '../config/Database.php';
-require_once '../models/Ride.php';
+require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../models/Ride.php';
 
 try {
     $database = new Database();

@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // Include Database connection
 require_once("../admin/config/Database.php");
+require_once __DIR__ . '/../utils/IdHelper.php';
 
 // Initialize Database
 $database = new Database();
@@ -21,10 +22,10 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'POST') {
     // Get POST data
     $data = json_decode(file_get_contents("php://input"), true);
-    $user_id = $data['user_id'] ?? null;
+    $user_id = IdHelper::decodeUser($data['user_id'] ?? null);
     $latitude = $data['latitude'] ?? null;
     $longitude = $data['longitude'] ?? null;
-    $driver_id = $data['driver_id'] ?? null;
+    $driver_id = IdHelper::decodeDriver($data['driver_id'] ?? null);
 
     // Validate required data
     if (empty($user_id)) {
@@ -144,7 +145,7 @@ if ($method === 'POST') {
     $stmt->close();
 } elseif ($method === 'GET') {
     // Check if user_id is provided as a query string parameter
-    $user_id = $_GET['user_id'] ?? null;
+    $user_id = IdHelper::decodeUser($_GET['user_id'] ?? null);
     if (!empty($user_id)) {
         $sql = "SELECT id, user_id, driver_id, alert_type, message, latitude, longitude, status, created_at FROM alerts WHERE user_id = ? AND alert_type = 'sos' ORDER BY created_at DESC LIMIT 1";
         $stmt = $db->prepare($sql);

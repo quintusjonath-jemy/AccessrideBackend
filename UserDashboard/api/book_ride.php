@@ -31,6 +31,7 @@ require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../models/Ride.php';
 require_once __DIR__ . '/../models/Payment.php';
 require_once __DIR__ . '/../models/RideRequest.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 // Helper: insert a row into user_notifications
 function insertUserNotification($db, $userId, $title, $message, $type = 'info') {
@@ -53,8 +54,10 @@ try {
     exit;
   }
 
+  $userId = IdHelper::decodeUser($data['user_id'] ?? null);
+
   // Validation
-  if (empty($data['user_id'])) {
+  if (!$userId) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'User ID is required']);
     exit;
@@ -74,8 +77,6 @@ try {
   $rideModel = new Ride($db);
   $paymentModel = new Payment($db);
   $rideRequestModel = new RideRequest($db);
-
-  $userId = (int) $data['user_id'];
   $pickup = trim($data['pickup_location']);
   $dropoff = trim($data['dropoff_location']);
   $vehicleType = isset($data['vehicle_type']) ? trim($data['vehicle_type']) : 'car';

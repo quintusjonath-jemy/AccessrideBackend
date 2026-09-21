@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 class Driver
 {
@@ -214,7 +215,8 @@ class Driver
             LEFT JOIN driver_documents doc ON d.id = doc.driver_id
             WHERE d.id=?
         ");
-    $stmt->bind_param('i', $id);
+    $driverId = IdHelper::decodeDriver($id);
+    $stmt->bind_param('i', $driverId);
     $stmt->execute();
 
     $result = $stmt->get_result()->fetch_assoc();
@@ -229,6 +231,16 @@ class Driver
   // ADD DRIVER
   public function addDriver($data)
   {
+    $parts = explode(' ', trim($data['name'] ?? ''), 2);
+    $first_name = $parts[0] ?? '';
+    $last_name = isset($parts[1]) ? $parts[1] : '';
+    $email = $data['email'] ?? '';
+    $phone = $data['phone'] ?? '';
+    $status = $data['status'] ?? 'active';
+    $current_location = $data['current_location'] ?? 'Colombo';
+    $license_number = $data['license_number'] ?? '';
+    $password = password_hash($data['password'] ?? 'Driver@123', PASSWORD_BCRYPT);
+
     $sql = '
             INSERT INTO drivers
             (
@@ -237,44 +249,46 @@ class Driver
                 email,
                 phone,
                 status,
-                current_location
+                current_location,
+                license_number,
+                password
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ';
-
-    $parts = explode(' ', trim($data['name']), 2);
-    $first_name = $parts[0];
-    $last_name = isset($parts[1]) ? $parts[1] : '';
 
     $stmt = $this->conn->prepare($sql);
 
     $stmt->bind_param(
-      'ssssss',
+      'ssssssss',
       $first_name,
       $last_name,
-      $data['email'],
-      $data['phone'],
-      $data['status'],
-      $data['current_location']
+      $email,
+      $phone,
+      $status,
+      $current_location,
+      $license_number,
+      $password
     );
 
     if ($stmt->execute()) {
       $driver_id = $this->conn->insert_id;
 
       // Insert vehicle
+      $vehicle_number = $data['vehicle_number'] ?? 'NA-0000';
+      $vehicle_type = $data['vehicle_type'] ?? 'Car';
       $veh_stmt = $this->conn->prepare('INSERT INTO vehicles (driver_id, vehicle_number, vehicle_type) VALUES (?, ?, ?)');
       $veh_stmt->bind_param(
         'iss',
         $driver_id,
-        $data['vehicle_number'],
-        $data['vehicle_type']
+        $vehicle_number,
+        $vehicle_type
       );
       $veh_stmt->execute();
 
       // Insert subscription
-      $sub_status = isset($data['subscription_status']) ? $data['subscription_status'] : 'none';
-      $sub_expires = !empty($data['subscription_expires_at']) ? $data['subscription_expires_at'] : null;
-      $last_pay = !empty($data['last_payment_date']) ? $data['last_payment_date'] : null;
+      $sub_status = isset($data['subscription_status']) ? $data['subscription_status'] : 'active';
+      $sub_expires = !empty($data['subscription_expires_at']) ? $data['subscription_expires_at'] : date('Y-m-d', strtotime('+30 days'));
+      $last_pay = !empty($data['last_payment_date']) ? $data['last_payment_date'] : date('Y-m-d');
       $sub_amount = isset($data['subscription_amount']) ? (float) $data['subscription_amount'] : 29.99;
 
       $sub_stmt = $this->conn->prepare('INSERT INTO subscriptions (driver_id, status, expires_at, last_payment_date, amount, warning_sent) VALUES (?, ?, ?, ?, ?, 0)');
@@ -286,7 +300,9 @@ class Driver
         $last_pay,
         $sub_amount
       );
-      return $sub_stmt->execute();
+      $sub_stmt->execute();
+
+      return true;
     }
     return false;
   }
@@ -294,34 +310,60 @@ class Driver
   // UPDATE DRIVER
   public function updateDriver($data)
   {
-    // Log changes in subscription status if any
+    $driver_id = IdHelper::decodeDriver($data['id'] ?? null);
+    if (!$driver_id) {
+      return false;
+    }
+
+    // Fetch existing driver info to merge partial update safely
     $oldRes = $this->conn->query("
             SELECT 
+                d.*,
                 s.status AS subscription_status, 
-                TRIM(CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, ''))) AS name 
+                TRIM(CONCAT(COALESCE(d.first_name, ''), ' ', COALESCE(d.last_name, ''))) AS name,
+                v.vehicle_number,
+                v.vehicle_type
             FROM drivers d 
             LEFT JOIN subscriptions s ON d.id = s.driver_id 
-            WHERE d.id = " . (int) $data['id']);
-    if ($oldRes) {
-      $oldRow = $oldRes->fetch_assoc();
-      if ($oldRow) {
-        $oldStatus = $oldRow['subscription_status'];
-        $newStatus = isset($data['subscription_status']) ? $data['subscription_status'] : 'none';
-        if ($oldStatus !== $newStatus) {
-          $driverName = $oldRow['name'];
-          $msg = '';
-          if ($newStatus === 'active') {
-            $msg = 'Driver ' . $driverName . "'s membership subscription has been renewed (status: Active).";
-          } elseif ($newStatus === 'expired') {
-            $msg = 'Driver ' . $driverName . "'s membership subscription has been marked as Expired.";
-          } else {
-            $msg = 'Driver ' . $driverName . "'s membership subscription has been updated to None.";
-          }
-          $stmtNotif = $this->conn->prepare("INSERT INTO admin_notifications (type, message) VALUES ('Driver', ?)");
-          $stmtNotif->bind_param('s', $msg);
-          $stmtNotif->execute();
-        }
+            LEFT JOIN vehicles v ON d.id = v.driver_id
+            WHERE d.id = " . (int) $driver_id);
+
+    if (!$oldRes || $oldRes->num_rows === 0) {
+      return false;
+    }
+    $oldRow = $oldRes->fetch_assoc();
+
+    if (isset($data['name'])) {
+      $parts = explode(' ', trim($data['name']), 2);
+      $first_name = $parts[0];
+      $last_name = isset($parts[1]) ? $parts[1] : '';
+    } else {
+      $first_name = $oldRow['first_name'];
+      $last_name = $oldRow['last_name'];
+    }
+
+    $email = $data['email'] ?? $oldRow['email'];
+    $phone = $data['phone'] ?? $oldRow['phone'];
+    $status = $data['status'] ?? $oldRow['status'];
+    $current_location = $data['current_location'] ?? $oldRow['current_location'];
+    $license_number = $data['license_number'] ?? $oldRow['license_number'];
+
+    // Log changes in subscription status if any
+    $oldStatus = $oldRow['subscription_status'];
+    $newStatus = isset($data['subscription_status']) ? $data['subscription_status'] : $oldStatus;
+    if ($newStatus && $oldStatus !== $newStatus) {
+      $driverName = $oldRow['name'];
+      $msg = '';
+      if ($newStatus === 'active') {
+        $msg = 'Driver ' . $driverName . "'s membership subscription has been renewed (status: Active).";
+      } elseif ($newStatus === 'expired') {
+        $msg = 'Driver ' . $driverName . "'s membership subscription has been marked as Expired.";
+      } else {
+        $msg = 'Driver ' . $driverName . "'s membership subscription has been updated to None.";
       }
+      $stmtNotif = $this->conn->prepare("INSERT INTO admin_notifications (type, message) VALUES ('Driver', ?)");
+      $stmtNotif->bind_param('s', $msg);
+      $stmtNotif->execute();
     }
 
     $sql = '
@@ -332,31 +374,30 @@ class Driver
                 email=?,
                 phone=?,
                 status=?,
-                current_location=?
+                current_location=?,
+                license_number=?
             WHERE id=?
         ';
-
-    $parts = explode(' ', trim($data['name']), 2);
-    $first_name = $parts[0];
-    $last_name = isset($parts[1]) ? $parts[1] : '';
 
     $stmt = $this->conn->prepare($sql);
 
     $stmt->bind_param(
-      'ssssssi',
+      'sssssssi',
       $first_name,
       $last_name,
-      $data['email'],
-      $data['phone'],
-      $data['status'],
-      $data['current_location'],
-      $data['id']
+      $email,
+      $phone,
+      $status,
+      $current_location,
+      $license_number,
+      $driver_id
     );
 
     if ($stmt->execute()) {
-      $driver_id = (int) $data['id'];
-
       // Upsert vehicle
+      $veh_num = $data['vehicle_number'] ?? $oldRow['vehicle_number'] ?? 'NA-0000';
+      $veh_type = $data['vehicle_type'] ?? $oldRow['vehicle_type'] ?? 'Car';
+
       $veh_stmt = $this->conn->prepare('
                 INSERT INTO vehicles (driver_id, vehicle_number, vehicle_type)
                 VALUES (?, ?, ?)
@@ -365,37 +406,40 @@ class Driver
       $veh_stmt->bind_param(
         'issss',
         $driver_id,
-        $data['vehicle_number'],
-        $data['vehicle_type'],
-        $data['vehicle_number'],
-        $data['vehicle_type']
+        $veh_num,
+        $veh_type,
+        $veh_num,
+        $veh_type
       );
       $veh_stmt->execute();
 
       // Upsert subscription
-      $sub_status = isset($data['subscription_status']) ? $data['subscription_status'] : 'none';
-      $sub_expires = !empty($data['subscription_expires_at']) ? $data['subscription_expires_at'] : null;
-      $last_pay = !empty($data['last_payment_date']) ? $data['last_payment_date'] : null;
-      $sub_amount = isset($data['subscription_amount']) ? (float) $data['subscription_amount'] : 29.99;
+      if (isset($data['subscription_status']) || isset($data['subscription_expires_at']) || isset($data['subscription_amount'])) {
+        $sub_status = isset($data['subscription_status']) ? $data['subscription_status'] : ($oldRow['subscription_status'] ?? 'active');
+        $sub_expires = !empty($data['subscription_expires_at']) ? $data['subscription_expires_at'] : null;
+        $last_pay = !empty($data['last_payment_date']) ? $data['last_payment_date'] : null;
+        $sub_amount = isset($data['subscription_amount']) ? (float) $data['subscription_amount'] : 29.99;
 
-      $sub_stmt = $this->conn->prepare('
-                INSERT INTO subscriptions (driver_id, status, expires_at, last_payment_date, amount, warning_sent)
-                VALUES (?, ?, ?, ?, ?, 0)
-                ON DUPLICATE KEY UPDATE status=?, expires_at=?, last_payment_date=?, amount=?, warning_sent=0
-            ');
-      $sub_stmt->bind_param(
-        'isssdsssd',
-        $driver_id,
-        $sub_status,
-        $sub_expires,
-        $last_pay,
-        $sub_amount,
-        $sub_status,
-        $sub_expires,
-        $last_pay,
-        $sub_amount
-      );
-      return $sub_stmt->execute();
+        $sub_stmt = $this->conn->prepare('
+                  INSERT INTO subscriptions (driver_id, status, expires_at, last_payment_date, amount, warning_sent)
+                  VALUES (?, ?, ?, ?, ?, 0)
+                  ON DUPLICATE KEY UPDATE status=?, expires_at=?, last_payment_date=?, amount=?, warning_sent=0
+              ');
+        $sub_stmt->bind_param(
+          'isssdsssd',
+          $driver_id,
+          $sub_status,
+          $sub_expires,
+          $last_pay,
+          $sub_amount,
+          $sub_status,
+          $sub_expires,
+          $last_pay,
+          $sub_amount
+        );
+        $sub_stmt->execute();
+      }
+      return true;
     }
     return false;
   }
@@ -403,8 +447,9 @@ class Driver
   // DELETE DRIVER
   public function deleteDriver($id)
   {
+    $driverId = IdHelper::decodeDriver($id);
     $stmt = $this->conn->prepare('DELETE FROM drivers WHERE id=?');
-    $stmt->bind_param('i', $id);
+    $stmt->bind_param('i', $driverId);
 
     return $stmt->execute();
   }
@@ -412,6 +457,7 @@ class Driver
   // UPDATE DRIVER LOCATION
   public function updateLocation($data)
   {
+    $driverId = IdHelper::decodeDriver($data['id'] ?? null);
     $sql = '
             UPDATE drivers
             SET latitude=?, longitude=?
@@ -424,7 +470,7 @@ class Driver
       'ddi',
       $data['latitude'],
       $data['longitude'],
-      $data['id']
+      $driverId
     );
 
     return $stmt->execute();
@@ -432,8 +478,9 @@ class Driver
 
   public function toggleDriverStatus($id)
   {
+    $driverId = IdHelper::decodeDriver($id);
     $stmt = $this->conn->prepare('SELECT status FROM drivers WHERE id=?');
-    $stmt->bind_param('i', $id);
+    $stmt->bind_param('i', $driverId);
     $stmt->execute();
 
     $driver = $stmt->get_result()->fetch_assoc();
@@ -452,7 +499,7 @@ class Driver
     }
 
     $stmt = $this->conn->prepare('UPDATE drivers SET status=? WHERE id=?');
-    $stmt->bind_param('si', $newStatus, $id);
+    $stmt->bind_param('si', $newStatus, $driverId);
 
     return $stmt->execute();
   }

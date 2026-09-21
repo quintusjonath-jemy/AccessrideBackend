@@ -8,24 +8,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-include "../config/database.php";
+require_once __DIR__ . "/../config/database.php";
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 $body = file_get_contents('php://input');
 $data = json_decode($body, true);
 
 if (is_array($data)) {
-    $user_id = $data['id'] ?? $data['user_id'] ?? null;
+    $raw_user_id = $data['id'] ?? $data['user_id'] ?? null;
     $name = $data['name'] ?? null;
     $phone = $data['phone'] ?? null;
     $email = $data['email'] ?? null;
     $location = $data['location'] ?? $data['address'] ?? null;
 } else {
-    $user_id = $_POST['id'] ?? $_POST['user_id'] ?? null;
+    $raw_user_id = $_POST['id'] ?? $_POST['user_id'] ?? null;
     $name = $_POST['name'] ?? null;
     $phone = $_POST['phone'] ?? null;
     $email = $_POST['email'] ?? null;
     $location = $_POST['location'] ?? $_POST['address'] ?? null;
 }
+
+$user_id = IdHelper::decodeUser($raw_user_id);
 
 if (!$user_id) {
     http_response_code(400);

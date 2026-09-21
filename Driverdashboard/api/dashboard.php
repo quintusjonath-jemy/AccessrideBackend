@@ -6,8 +6,9 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET');
 
-require_once '../config/Database.php';
-require_once '../controllers/DashboardController.php';
+require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../controllers/DashboardController.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
   if (!isset($_GET['driver_id'])) {
@@ -18,7 +19,14 @@ try {
     exit;
   }
 
-  $driverId = (int) $_GET['driver_id'];
+  $driverId = IdHelper::decodeDriver($_GET['driver_id']);
+  if (!$driverId) {
+    echo json_encode([
+      'success' => false,
+      'message' => 'Invalid Driver ID'
+    ]);
+    exit;
+  }
 
   $database = new Database();
   $db = $database->connect();

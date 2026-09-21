@@ -12,6 +12,8 @@
  *   $safe = Security::sanitizeText($raw, 500); // Trim & cap length
  */
 
+require_once __DIR__ . '/../utils/IdHelper.php';
+
 class Security
 {
     // ── Allowed frontend origins (dev + production) ───────────────────────────
@@ -51,14 +53,17 @@ class Security
     }
 
     // ── Session: verify the user is authenticated ─────────────────────────────
-    // Returns the authenticated user_id or aborts with 401.
+    // Returns the authenticated user_id integer or aborts with 401.
     public static function requireSession(): int
     {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
-        if (!isset($_SESSION['user']['id'])) {
+        $rawId = $_SESSION['user']['id'] ?? null;
+        $userId = IdHelper::decodeUser($rawId);
+
+        if (!$userId) {
             http_response_code(401);
             header('Content-Type: application/json');
             echo json_encode([
@@ -68,7 +73,7 @@ class Security
             exit;
         }
 
-        return (int)$_SESSION['user']['id'];
+        return $userId;
     }
 
     // ── Ownership: ensure the requested user_id belongs to the session user ───
@@ -79,7 +84,8 @@ class Security
             session_start();
         }
 
-        $sessionUserId = (int)($_SESSION['user']['id'] ?? 0);
+        $rawId = $_SESSION['user']['id'] ?? null;
+        $sessionUserId = IdHelper::decodeUser($rawId) ?? 0;
 
         if ($sessionUserId === 0 || $sessionUserId !== $requestedUserId) {
             http_response_code(403);
@@ -163,8 +169,8 @@ class Security
             ? ($_POST['user_id'] ?? null)
             : ($_GET['user_id']  ?? null);
 
-        $userId = (int)$raw;
-        if ($userId <= 0) {
+        $userId = IdHelper::decodeUser($raw);
+        if (!$userId) {
             http_response_code(400);
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'error' => 'A valid user_id is required.']);

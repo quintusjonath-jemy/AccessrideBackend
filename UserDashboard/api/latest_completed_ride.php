@@ -22,15 +22,15 @@ if (php_sapi_name() === 'cli') {
 }
 
 require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
-  if (empty($_GET['user_id'])) {
+  $userId = IdHelper::decodeUser($_GET['user_id'] ?? null);
+  if (!$userId) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'User ID is required']);
     exit;
   }
-
-  $userId = (int)$_GET['user_id'];
   $db = (new Database())->connect();
 
   // Get most recent completed or accepted/active ride for this user to show completion details
