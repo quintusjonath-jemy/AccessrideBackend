@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 class Driver
 {
@@ -296,6 +297,8 @@ class Driver
                 return false;
             }
             unset($driver['password']);
+            $driver['raw_id'] = (int)$driver['id'];
+            $driver['id'] = IdHelper::encodeDriver((int)$driver['id']);
             return $driver;
         } catch (Exception $e) {
             error_log($e->getMessage());

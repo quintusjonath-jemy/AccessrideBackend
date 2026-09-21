@@ -9,9 +9,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require_once '../config/Database.php';
-require_once '../models/Ride.php';
-require_once '../models/Driver.php';
+require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../models/Ride.php';
+require_once __DIR__ . '/../models/Driver.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
     $database = new Database();
@@ -19,7 +20,7 @@ try {
     $rideModel = new Ride($db);
     $driverModel = new Driver($db);
 
-    $driver_id = isset($_GET['driver_id']) ? intval($_GET['driver_id']) : null;
+    $driver_id = IdHelper::decodeDriver($_GET['driver_id'] ?? null);
 
     $tripsData = $rideModel->getRecentTrips($driver_id);
     $trips = [];

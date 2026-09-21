@@ -19,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../controllers/ScheduleController.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
   $controller = new ScheduleController();
@@ -27,7 +28,8 @@ try {
   switch ($method) {
     case 'GET':
       // Fetch scheduled rides: GET ?user_id=X
-      if (!isset($_GET['user_id'])) {
+      $userId = IdHelper::decodeUser($_GET['user_id'] ?? null);
+      if (!$userId) {
         http_response_code(400);
         echo json_encode([
           'success' => false,
@@ -35,7 +37,6 @@ try {
         ]);
         exit;
       }
-      $userId = (int) $_GET['user_id'];
       $response = $controller->getSchedules($userId);
       echo json_encode($response);
       break;
@@ -77,15 +78,15 @@ try {
     case 'DELETE':
       // Cancel scheduled ride via DELETE
       // Reading query parameters e.g. DELETE ?ride_id=X&user_id=Y
-      $rideId = isset($_GET['ride_id']) ? (int) $_GET['ride_id'] : 0;
-      $userId = isset($_GET['user_id']) ? (int) $_GET['user_id'] : 0;
+      $rideId = IdHelper::decodeRide($_GET['ride_id'] ?? null) ?? 0;
+      $userId = IdHelper::decodeUser($_GET['user_id'] ?? null) ?? 0;
 
       // Or fallback to JSON body if parameters aren't in the URL
       if ($rideId === 0 || $userId === 0) {
         $data = json_decode(file_get_contents('php://input'), true);
         if ($data) {
-          $rideId = isset($data['ride_id']) ? (int) $data['ride_id'] : $rideId;
-          $userId = isset($data['user_id']) ? (int) $data['user_id'] : $userId;
+          $rideId = IdHelper::decodeRide($data['ride_id'] ?? null) ?? $rideId;
+          $userId = IdHelper::decodeUser($data['user_id'] ?? null) ?? $userId;
         }
       }
 

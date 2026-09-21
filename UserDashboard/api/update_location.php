@@ -16,11 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require_once '../config/Database.php';
+require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
     $data = json_decode(file_get_contents("php://input"), true);
-    if (!isset($data['user_id']) || !isset($data['location'])) {
+    $userId = IdHelper::decodeUser($data['user_id'] ?? null);
+
+    if (!$userId || !isset($data['location'])) {
         echo json_encode([
             'success' => false,
             'message' => 'User ID and location are required'
@@ -28,7 +31,6 @@ try {
         exit;
     }
 
-    $userId = (int) $data['user_id'];
     $location = trim($data['location']);
 
     $database = new Database();

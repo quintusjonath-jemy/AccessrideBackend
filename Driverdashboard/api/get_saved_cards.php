@@ -11,10 +11,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-require_once '../config/Database.php';
+require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
-    if (empty($_GET['driver_id'])) {
+    $driverId = IdHelper::decodeDriver($_GET['driver_id'] ?? null);
+    if (!$driverId) {
         http_response_code(400);
         echo json_encode([
             'success' => false,
@@ -22,8 +24,6 @@ try {
         ]);
         exit;
     }
-
-    $driverId = (int)$_GET['driver_id'];
 
     $database = new Database();
     $db = $database->connect();

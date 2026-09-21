@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 class Payment {
     // UML Class Diagram Attributes (Private)
@@ -57,12 +58,13 @@ class Payment {
 
     // Update payment status
     public function updatePaymentStatus($id, $status) {
+        $payId = IdHelper::decodePayment($id);
         $sql = "UPDATE " . $this->table . " SET status = ? WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         if (!$stmt) {
             return false;
         }
-        $stmt->bind_param("si", $status, $id);
+        $stmt->bind_param("si", $status, $payId);
         return $stmt->execute();
     }
 

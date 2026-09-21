@@ -9,14 +9,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require_once '../config/Database.php';
+require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
     $database = new Database();
     $db = $database->connect();
 
     $data = json_decode(file_get_contents("php://input"), true);
-    $ride_id = isset($data['ride_id']) ? intval($data['ride_id']) : null;
+    $ride_id = IdHelper::decodeRide($data['ride_id'] ?? null);
 
     if ($ride_id) {
         // 1. Update rides status to completed

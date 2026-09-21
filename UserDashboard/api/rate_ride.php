@@ -18,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 // Helper: insert a row into user_notifications
 function insertUserNotification($db, $userId, $title, $message, $type = 'info') {
@@ -31,15 +32,15 @@ function insertUserNotification($db, $userId, $title, $message, $type = 'info') 
 
 try {
   $data = json_decode(file_get_contents('php://input'), true);
-  if (!$data || empty($data['ride_id']) || !isset($data['rating'])) {
+  $rideId = IdHelper::decodeRide($data['ride_id'] ?? null);
+  $userId  = IdHelper::decodeUser($data['user_id'] ?? null) ?? 0;
+  $rating  = isset($data['rating']) ? (int)$data['rating'] : 0;
+
+  if (!$data || !$rideId || !isset($data['rating'])) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Ride ID and rating are required']);
     exit;
   }
-
-  $rideId = (int)$data['ride_id'];
-  $rating  = (int)$data['rating'];
-  $userId  = isset($data['user_id']) ? (int)$data['user_id'] : 0;
 
   if ($rating < 1 || $rating > 5) {
     http_response_code(400);

@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 // Helper: insert a row into user_notifications
 function insertUserNotification($db, $userId, $title, $message, $type = 'info') {
@@ -40,7 +41,10 @@ function insertUserNotification($db, $userId, $title, $message, $type = 'info') 
 
 try {
   $data = json_decode(file_get_contents('php://input'), true);
-  if (!$data || empty($data['ride_id'])) {
+  $rideId = IdHelper::decodeRide($data['ride_id'] ?? null);
+  $userId  = IdHelper::decodeUser($data['user_id'] ?? null) ?? 0;
+
+  if (!$data || !$rideId) {
     http_response_code(400);
     echo json_encode([
       'success' => false,
@@ -48,9 +52,6 @@ try {
     ]);
     exit;
   }
-
-  $rideId = (int) $data['ride_id'];
-  $userId  = isset($data['user_id']) ? (int) $data['user_id'] : 0;
   $db = (new Database())->connect();
 
   // Cancel the ride request if exists

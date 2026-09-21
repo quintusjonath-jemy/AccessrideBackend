@@ -1,8 +1,8 @@
 <?php
-
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../models/Schedule.php';
 require_once __DIR__ . '/../models/Payment.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 class ScheduleController
 {
@@ -19,6 +19,7 @@ class ScheduleController
   // GET ALL ACTIVE SCHEDULES
   public function getSchedules($userId)
   {
+    $userId = IdHelper::decodeUser($userId);
     if (empty($userId)) {
       return [
         'success' => false,
@@ -37,8 +38,9 @@ class ScheduleController
   // ADD A NEW RIDE TO THE SCHEDULE
   public function addSchedule($data)
   {
+    $userId = IdHelper::decodeUser($data['user_id'] ?? null);
     // 1. Validation
-    if (empty($data['user_id'])) {
+    if (empty($userId)) {
       return ['success' => false, 'message' => 'User ID is required'];
     }
     if (empty($data['pickup_location'])) {
@@ -57,7 +59,6 @@ class ScheduleController
       return ['success' => false, 'message' => 'Scheduled date must be in the future'];
     }
 
-    $userId = (int) $data['user_id'];
     $pickup = trim($data['pickup_location']);
     $dropoff = trim($data['dropoff_location']);
     $dateTime = date('Y-m-d H:i:s', $scheduledTime);
@@ -111,11 +112,14 @@ class ScheduleController
   // UPDATE AN EXISTING SCHEDULED RIDE
   public function updateSchedule($data)
   {
+    $rideId = IdHelper::decodeRide($data['ride_id'] ?? null);
+    $userId = IdHelper::decodeUser($data['user_id'] ?? null);
+
     // 1. Validation
-    if (empty($data['ride_id'])) {
+    if (empty($rideId)) {
       return ['success' => false, 'message' => 'Ride ID is required'];
     }
-    if (empty($data['user_id'])) {
+    if (empty($userId)) {
       return ['success' => false, 'message' => 'User ID is required'];
     }
     if (empty($data['pickup_location'])) {
@@ -133,8 +137,6 @@ class ScheduleController
       return ['success' => false, 'message' => 'Scheduled date must be in the future'];
     }
 
-    $rideId = (int) $data['ride_id'];
-    $userId = (int) $data['user_id'];
     $pickup = trim($data['pickup_location']);
     $dropoff = trim($data['dropoff_location']);
     $dateTime = date('Y-m-d H:i:s', $scheduledTime);
@@ -183,6 +185,9 @@ class ScheduleController
   // CANCEL A SCHEDULED RIDE
   public function cancelSchedule($rideId, $userId)
   {
+    $rideId = IdHelper::decodeRide($rideId);
+    $userId = IdHelper::decodeUser($userId);
+
     if (empty($rideId) || empty($userId)) {
       return [
         'success' => false,
@@ -190,7 +195,7 @@ class ScheduleController
       ];
     }
 
-    $success = $this->scheduleModel->cancel((int) $rideId, (int) $userId);
+    $success = $this->scheduleModel->cancel($rideId, $userId);
 
     if ($success) {
       return [

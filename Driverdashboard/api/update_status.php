@@ -9,8 +9,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require_once '../config/Database.php';
-require_once '../models/Driver.php';
+require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../models/Driver.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
     $database = new Database();
@@ -18,7 +19,7 @@ try {
     $driverModel = new Driver($db);
 
     $data = json_decode(file_get_contents("php://input"), true);
-    $driver_id = isset($data['driver_id']) ? intval($data['driver_id']) : null;
+    $driver_id = IdHelper::decodeDriver($data['driver_id'] ?? null);
     $status = isset($data['status']) ? trim(strtolower($data['status'])) : null;
 
     if (!$driver_id || !$status) {

@@ -18,13 +18,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-require_once '../config/Database.php';
+require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
     $data = json_decode(file_get_contents('php://input'), true);
-    $rideId  = isset($data['ride_id'])  ? (int)$data['ride_id']  : 0;
-    $otp     = isset($data['otp'])      ? (int)$data['otp']      : 0;
-    $driverId = isset($data['driver_id']) ? (int)$data['driver_id'] : 0;
+    $rideId  = IdHelper::decodeRide($data['ride_id'] ?? null) ?? 0;
+    $otp     = isset($data['otp']) ? (int)$data['otp'] : 0;
+    $driverId = IdHelper::decodeDriver($data['driver_id'] ?? null) ?? 0;
 
     if (!$rideId || !$otp || !$driverId) {
         echo json_encode(['status' => 'error', 'message' => 'ride_id, otp, and driver_id are required']);

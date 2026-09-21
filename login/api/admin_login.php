@@ -18,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../../admin/config/Database.php';
+require_once __DIR__ . '/../../utils/IdHelper.php';
 
 try {
     $body = file_get_contents('php://input');
@@ -57,8 +58,11 @@ try {
         exit;
     }
 
+    $encodedAdminId = IdHelper::encodeAdmin((int)$admin['id']);
+
     $_SESSION['admin'] = [
-        'id' => $admin['id'],
+        'id' => $encodedAdminId,
+        'raw_id' => (int)$admin['id'],
         'email' => $admin['email'],
         'name' => $admin['name'],
     ];
